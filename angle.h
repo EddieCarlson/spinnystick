@@ -1,3 +1,5 @@
+#pragma once
+
 #include <Arduino.h>
 
 double micros_per_rotation = 580000.0;
