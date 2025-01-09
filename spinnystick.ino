@@ -1,18 +1,11 @@
-
-
 #include <SPI.h>
+#include <FastLED.h>
 
-// #include "nrf_drv_spi.h"x
-// #include "common.h"
 #include "angle.h"
 #include "strip.h"
 #include "animation/circle.h"
+#include "imu_init.h"
 
-
-#include <FastLED.h>
-
-
-/*
 #include "FastIMU.h"
 #include <Wire.h>
 
@@ -21,98 +14,29 @@
 MPU6500 IMU;               //Change to the name of any supported IMU!
 // Other supported IMUS: MPU9255 MPU9250 MPU6886 MPU6050 ICM20689 ICM20690 BMI055 BMX055 BMI160 LSM6DS3 LSM6DSL
 
-const int I2C_SDA = 18;   //I2C Data pin
-const int I2C_SCL = 19;   //I2c Clock pin
-
-calData calib = { 0 };  //Calibration data
-AccelData accelData;    //Sensor data
-GyroData gyroData;
-
-
-*/
-
-
-
-// const SPIClass myspi = MbedSPI(PIN_SPI_MISO, PIN_SPI_MOSI, PIN_SPI_SCK);
-
-// CRGB leds[NUM_LEDS];
-
-
-
-
-void setup() {
-
-  set_image();
-  SPI.begin();
-  SPI.beginTransaction(SPISettings(16000000, MSBFIRST, SPI_MODE0));
-  // SPI.setClockDivider(SPI_CLOCK_DIV2);
-
-  // SPI.beginTransaction(SPISettings());
-
-  // delay(1000);
-  Serial.begin(9600);
-  delay(500);
-/*  while(!Serial) { ; } */
-
-  Serial.println("hi");
-  strip.begin();
-  strip.setBrightness(70);
-
+void setToBlack() {
   for (int i = 0; i < NUMPIXELS; i++) {
     strip.setPixelColor(i, 0, 0, 0);
   }
   strip.show();
+}
 
-/*
-  Wire.begin();
-  Wire.setSDA(I2C_SDA);
-	Wire.setSCL(I2C_SCL);
-  Wire.setClock(400000); //400khz clock
+void setup() {
+  SPI.begin();
+  SPI.beginTransaction(SPISettings(16000000, MSBFIRST, SPI_MODE0));
 
-  int err = IMU.init(calib, IMU_ADDRESS);
-  if (err != 0) {
-    Serial.print("Error initializing IMU: ");
-    Serial.println(err);
-    while (true) {
-      ;
-    }
-  }
+  Serial.begin(9600);
 
+  strip.begin();
+  strip.setBrightness(70); // out of...255?
 
-#ifdef PERFORM_CALIBRATION
-  Serial.println("FastIMU calibration & data example");
-  delay(2500);
-  Serial.println("Keep IMU level.");
-  delay(5000);
-  IMU.calibrateAccelGyro(&calib);
-  Serial.println("Calibration done!");
-  Serial.println("Accel biases X/Y/Z: ");
-  Serial.print(calib.accelBias[0]);
-  Serial.print(", ");
-  Serial.print(calib.accelBias[1]);
-  Serial.print(", ");
-  Serial.println(calib.accelBias[2]);
-  Serial.println("Gyro biases X/Y/Z: ");
-  Serial.print(calib.gyroBias[0]);
-  Serial.print(", ");
-  Serial.print(calib.gyroBias[1]);
-  Serial.print(", ");
-  Serial.println(calib.gyroBias[2]);
-  delay(5000);
-  IMU.init(calib, IMU_ADDRESS);
-#endif
+  set_image();
+  setToBlack();
 
-  //err = IMU.setGyroRange(500);      //USE THESE TO SET THE RANGE, IF AN INVALID RANGE IS SET IT WILL RETURN -1
-  //err = IMU.setAccelRange(2);       //THESE TWO SET THE GYRO RANGE TO ±500 DPS AND THE ACCELEROMETER RANGE TO ±2g
- 
-  if (err != 0) {
-    Serial.print("Error Setting range: ");
-    Serial.println(err);
-    while (true) {
-      ;
-    }
-  }
-  */
+  while(!Serial) { ; }
+
+  Serial.println("hi");
+  initIMU(IMU, IMU_ADDRESS);
 }
 
 const int image_size = (ROPE_PIXELS + COL_HEIGHT) * 2; // 278x278 px
@@ -126,8 +50,8 @@ float dist(float x1, float y1, float x2, float y2) {
   return pow(x2 - x1, 2) + pow(y2 - y1, 2);
 }
 
+// set reference image all black
 void reset_image() {
-  // set all to black
   for(int row = 0; row < image_size; row++) {
     for(int col = 0; col < image_size; col++) {
       image[col][row] = CRGB::Black;
@@ -156,62 +80,63 @@ void set_image() {
 }
 
 
+// for testing min time to push data over SPI
 void setColorRayNothing(double angle) {
   for(int height = 0; height < COL_HEIGHT; height++) {
-  strip.setPixelColor(height, 0, 1, 20);
-  strip.setPixelColor(200 - height, 20, 11, 1);
+    strip.setPixelColor(height, 0, 1, 20);
+    strip.setPixelColor(200 - height, 20, 11, 1);
   }
   strip.show();
 }
 
 void setColorRay(double rad) {
-    for (int height = 0; height < COL_HEIGHT; height++) {
-        strip.setPixelColor(height, 0, 0, 0);
-        // TODO - direction of rad increase correct?
-        float x = (ROPE_PIXELS + height) * cos(rad); 
-        float y = (ROPE_PIXELS + height) * sin(rad);
+  for (int height = 0; height < COL_HEIGHT; height++) {
+    strip.setPixelColor(height, 0, 0, 0);
+    // TODO - direction of rad increase correct?
+    float x = (ROPE_PIXELS + height) * cos(rad); 
+    float y = (ROPE_PIXELS + height) * sin(rad);
 
-        int floor_x = ROPE_PIXELS + COL_HEIGHT + floor(x);
-        int floor_y = ROPE_PIXELS + COL_HEIGHT + floor(y);
-        int ceil_x = ROPE_PIXELS + COL_HEIGHT + ceil(x);
-        int ceil_y = ROPE_PIXELS + COL_HEIGHT + ceil(y);
+    int floor_x = ROPE_PIXELS + COL_HEIGHT + floor(x);
+    int floor_y = ROPE_PIXELS + COL_HEIGHT + floor(y);
+    int ceil_x = ROPE_PIXELS + COL_HEIGHT + ceil(x);
+    int ceil_y = ROPE_PIXELS + COL_HEIGHT + ceil(y);
 
-        //TODO - substitute floor/ceil
-        float ll_dist = 1 - dist(x, y, floor_x, floor_y);
-        float lr_dist = 1 - dist(x, y, ceil_x, floor_y);
-        float tl_dist = 1 - dist(x, y, floor_x, ceil_y);
-        float tr_dist = 1 - dist(x, y, ceil_x, ceil_y);
+    //TODO - substitute floor/ceil
+    float ll_dist = 1 - dist(x, y, floor_x, floor_y);
+    float lr_dist = 1 - dist(x, y, ceil_x, floor_y);
+    float tl_dist = 1 - dist(x, y, floor_x, ceil_y);
+    float tr_dist = 1 - dist(x, y, ceil_x, ceil_y);
 
-        float dist_sum = ll_dist + lr_dist + tl_dist + tr_dist;
-        float adj_ll_d = ll_dist / dist_sum;
-        float adj_lr_d = lr_dist / dist_sum;
-        float adj_tl_d = tl_dist / dist_sum;
-        float adj_tr_d = tr_dist / dist_sum;
+    float dist_sum = ll_dist + lr_dist + tl_dist + tr_dist;
+    float adj_ll_d = ll_dist / dist_sum;
+    float adj_lr_d = lr_dist / dist_sum;
+    float adj_tl_d = tl_dist / dist_sum;
+    float adj_tr_d = tr_dist / dist_sum;
 
-        // Serial.print("(");
-        // Serial.print(floor_x);
-        // Serial.print(", ");
-        // Serial.print(floor_y);
-        // Serial.print("), ");
+    // Serial.print("(");
+    // Serial.print(floor_x);
+    // Serial.print(", ");
+    // Serial.print(floor_y);
+    // Serial.print("), ");
 
-        CRGB ll_color = image[floor_x][floor_y];
-        CRGB lr_color = image[ceil_x][floor_y];
-        CRGB tl_color = image[floor_x][ceil_y];
-        CRGB tr_color = image[ceil_x][ceil_y];
+    CRGB ll_color = image[floor_x][floor_y];
+    CRGB lr_color = image[ceil_x][floor_y];
+    CRGB tl_color = image[floor_x][ceil_y];
+    CRGB tr_color = image[ceil_x][ceil_y];
 
-        // TODO - uhh lol i think this maybe works? maybe round and bound instead of floor?
-        uint8_t blend_r = floor(sqrt(pow(ll_color[0] * adj_ll_d, 2) + pow(lr_color[0] * adj_lr_d, 2) + pow(tl_color[0] * adj_tl_d, 2) + pow(tr_color[0] * adj_tr_d, 2)));
-        uint8_t blend_g = floor(sqrt(pow(ll_color[1] * adj_ll_d, 2) + pow(lr_color[1] * adj_lr_d, 2) + pow(tl_color[1] * adj_tl_d, 2) + pow(tr_color[1] * adj_tr_d, 2)));
-        uint8_t blend_b = floor(sqrt(pow(ll_color[2] * adj_ll_d, 2) + pow(lr_color[2] * adj_lr_d, 2) + pow(tl_color[2] * adj_tl_d, 2) + pow(tr_color[2] * adj_tr_d, 2)));
-        // Serial.println(blend_b);
-        if (blend_r + blend_g + blend_b > 4) { 
-          strip.setPixelColor(height, blend_r, blend_g, blend_b);
-          strip.setPixelColor(200 - height, blend_r, blend_g, blend_b);
-        } else {
-          strip.setPixelColor(height, 0, 0, 0);
-          strip.setPixelColor(200 - height, 0, 0, 0);
-        }
+    // TODO - uhh lol i think this maybe works? maybe round and bound instead of floor?
+    uint8_t blend_r = floor(sqrt(pow(ll_color[0] * adj_ll_d, 2) + pow(lr_color[0] * adj_lr_d, 2) + pow(tl_color[0] * adj_tl_d, 2) + pow(tr_color[0] * adj_tr_d, 2)));
+    uint8_t blend_g = floor(sqrt(pow(ll_color[1] * adj_ll_d, 2) + pow(lr_color[1] * adj_lr_d, 2) + pow(tl_color[1] * adj_tl_d, 2) + pow(tr_color[1] * adj_tr_d, 2)));
+    uint8_t blend_b = floor(sqrt(pow(ll_color[2] * adj_ll_d, 2) + pow(lr_color[2] * adj_lr_d, 2) + pow(tl_color[2] * adj_tl_d, 2) + pow(tr_color[2] * adj_tr_d, 2)));
+    // Serial.println(blend_b);
+    if (blend_r + blend_g + blend_b > 4) { 
+      strip.setPixelColor(height, blend_r, blend_g, blend_b);
+      strip.setPixelColor(200 - height, blend_r, blend_g, blend_b);
+    } else {
+      strip.setPixelColor(height, 0, 0, 0);
+      strip.setPixelColor(200 - height, 0, 0, 0);
     }
+  }
 }
 
 void loop() {

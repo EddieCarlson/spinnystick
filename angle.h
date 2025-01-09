@@ -1,7 +1,5 @@
 #pragma once
 
-#include <Arduino.h>
-
 double micros_per_rotation = 580000.0;
 unsigned long lastMicros = micros();
 double lastAngle = 0;
