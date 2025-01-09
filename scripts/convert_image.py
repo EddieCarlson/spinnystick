@@ -5,6 +5,8 @@ from scipy.ndimage import map_coordinates
 import math
 import sys
 
+# run via: `python convert_image.py <image_filepath> > hex_values`
+# outputs one 12-bit rgb hex value per pixel, one ray of pixels per line
 image_in = Image.open(sys.argv[1])
 
 def crop_center(pil_img, crop_width, crop_height):
@@ -20,18 +22,19 @@ def crop_max_square(pil_img):
   
 square_image = crop_max_square(image_in)
 
-
+# TODO: perhaps do an average of 'nearest' mode AND an interpolated value? that way we bias towards nearest, but still get some blending?
 def get_pixel_values(image, coords):
   return map_coordinates(image, coords, mode='nearest')
 
 # Convert the image to RGB format
 rgb_img = np.array(square_image.convert('RGB'))
+# TODO: clean up
 r_channel = [[r for r, _, _ in row] for row in rgb_img]
 g_channel = [[g for _, g, _ in row] for row in rgb_img]
 b_channel = [[b for _, _, b in row] for row in rgb_img]
 
 
-num_rays = 360 * 3 # 0.3 degrees between each ray
+num_rays = 360 * 3 # 1/3 degrees between each ray
 num_pixels = 96
 rope_pixels = 45 # number of pixels that would fit between pixel 0 on the rod and the center of spinning
 center_px = num_pixels + rope_pixels
@@ -59,10 +62,10 @@ green_pixels = get_pixel_values(g_channel, coordinates)
 blue_pixels = get_pixel_values(b_channel, coordinates)
 
 rgb_pixels = list(zip(red_pixels, green_pixels, blue_pixels))
+# div pixel values by 16 to convert to 12-bit color
 rgb_pixels_12bit = ["".join([format(v, 'x') for v in [r // 16, g // 16, b // 16]]) for [r, g, b] in rgb_pixels]
 
 ray_pixels_list = [",".join(rgb_pixels_12bit[(ray * num_pixels):((ray + 1) * num_pixels)]) for ray in range(0, num_rays)]
 
 for pxs in ray_pixels_list:
   print(pxs)
-
