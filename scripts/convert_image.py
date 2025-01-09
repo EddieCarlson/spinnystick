@@ -3,8 +3,9 @@ import numpy as np
 from scipy.ndimage import map_coordinates
 
 import math
+import sys
 
-image = Image.open('/Users/eddie/spinnystick/images/display/mandala1.jpg')
+image_in = Image.open(sys.argv[1])
 
 def crop_center(pil_img, crop_width, crop_height):
     img_width, img_height = pil_img.size
@@ -17,36 +18,51 @@ def crop_max_square(pil_img):
     crop_size = min(pil_img.size)
     return crop_center(pil_img, crop_size, crop_size)
   
-square_image = crop_max_square(image)
+square_image = crop_max_square(image_in)
 
-# Gets the pixel value at fractional coordinates (x, y) using bilinear interpolation
-def get_pixel_value(image, x, y):
-  return map_coordinates(image, [[y], [x]], order=1)[0]
+
+def get_pixel_values(image, coords):
+  return map_coordinates(image, coords, mode='nearest')
 
 # Convert the image to RGB format
-rgb_img = square_image.convert('RGB')
+rgb_img = np.array(square_image.convert('RGB'))
+r_channel = [[r for r, _, _ in row] for row in rgb_img]
+g_channel = [[g for _, g, _ in row] for row in rgb_img]
+b_channel = [[b for _, _, b in row] for row in rgb_img]
 
 
 num_rays = 360 * 3 # 0.3 degrees between each ray
 num_pixels = 96
 rope_pixels = 45 # number of pixels that would fit between pixel 0 on the rod and the center of spinning
 center_px = num_pixels + rope_pixels
+scale_factor = square_image.size[0] / 278
 
 rads_per_ray = 2 * math.pi / num_rays
 
 # [1080 by 96 by 3] 4-bit ints
 rays = [] # store each ray as a list of `num_pixels` 12-bit rgb elements
+coordinates = [[], []] # unzipped x,y pairs
+
 
 for ray in range(0, num_rays):
-  rays[ray] = []
+  ray_pixels = []
   for px in range(0, num_pixels):
     rad = ray * rads_per_ray
-    x = ((rope_pixels + px) * math.cos(rad)) + center_px
-    y = ((rope_pixels + px) * math.sin(rad)) + center_px
-    [r, g, b] = get_pixel_value(rgb_img, x, y)
-    rays[ray].append([r / 2, g / 2, b / 2]) # div by 2 for 12-bit color (that works right?)
+    x = (((rope_pixels + px) * math.cos(rad)) + center_px) * scale_factor
+    y = (((rope_pixels + px) * math.sin(rad)) + center_px) * scale_factor
+    coordinates[0].append(x)
+    coordinates[1].append(y)
+  rays.append(ray_pixels)
 
+red_pixels = get_pixel_values(r_channel, coordinates)
+green_pixels = get_pixel_values(g_channel, coordinates)
+blue_pixels = get_pixel_values(b_channel, coordinates)
 
-hex_values = [['#{:1x}{:1x}{:1x}'.format(r, g, b) for r, g, b in ray] for ray in rays]
+rgb_pixels = list(zip(red_pixels, green_pixels, blue_pixels))
+rgb_pixels_12bit = ["".join([format(v, 'x') for v in [r // 16, g // 16, b // 16]]) for [r, g, b] in rgb_pixels]
 
-print(hex_values)
+ray_pixels_list = [",".join(rgb_pixels_12bit[(ray * num_pixels):((ray + 1) * num_pixels)]) for ray in range(0, num_rays)]
+
+for pxs in ray_pixels_list:
+  print(pxs)
+
