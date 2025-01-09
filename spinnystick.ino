@@ -14,13 +14,7 @@
 MPU6500 IMU;               //Change to the name of any supported IMU!
 // Other supported IMUS: MPU9255 MPU9250 MPU6886 MPU6050 ICM20689 ICM20690 BMI055 BMX055 BMI160 LSM6DS3 LSM6DSL
 
-void setToBlack() {
-  for (int i = 0; i < NUMPIXELS; i++) {
-    strip.setPixelColor(i, 0, 0, 0);
-  }
-  strip.show();
-}
-
+// TODO: get fucking spi working faster
 void setup() {
   SPI.begin();
   SPI.beginTransaction(SPISettings(16000000, MSBFIRST, SPI_MODE0));
@@ -37,6 +31,13 @@ void setup() {
 
   Serial.println("hi");
   initIMU(IMU, IMU_ADDRESS);
+}
+
+void setToBlack() {
+  for (int i = 0; i < NUMPIXELS; i++) {
+    strip.setPixelColor(i, 0, 0, 0);
+  }
+  strip.show();
 }
 
 const int image_size = (ROPE_PIXELS + COL_HEIGHT) * 2; // 278x278 px
