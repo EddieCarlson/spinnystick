@@ -1,10 +1,13 @@
+#include <arduino.h>
 #include <SPI.h>
 #include <FastLED.h>
 
-#include "angle.h"
+#include "common.h"
 #include "strip.h"
-#include "animation/circle.h"
+#include "angle.h"
 #include "imu_init.h"
+#include "animation/circle.h"
+#include "animation/raydisplay.h"
 
 #include "FastIMU.h"
 #include <Wire.h>
@@ -39,8 +42,6 @@ void setToBlack() {
   }
   strip.show();
 }
-
-const int image_size = (ROPE_PIXELS + COL_HEIGHT) * 2; // 278x278 px
 
 CRGB image[image_size][image_size];
 

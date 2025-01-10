@@ -15,10 +15,6 @@ uint32_t rgb_to_hex(uint32_t r, uint32_t g, uint32_t b) {
   return (r << 16) | (g << 8) | b;
 }
 
-void calculate_current_ray(uint32_t *ray) {
-  calculate_ray(curAngle(), ray);
-}
-
 void calculate_ray(double cur_rad, uint32_t *ray) {
   double cur_ray = fmod(((double) NUM_RAYS) * cur_rad / (2 * PI), NUM_RAYS);
   int under_ray_idx = floor(cur_ray);
@@ -41,4 +37,8 @@ void calculate_ray(double cur_rad, uint32_t *ray) {
 
     ray[px] = rgb_to_hex(blend_r, blend_g, blend_b);
   }
+}
+
+void calculate_current_ray(uint32_t *ray) {
+  calculate_ray(curAngle(), ray);
 }

@@ -1,5 +1,8 @@
 #pragma once
 
+#include <Arduino.h>
+#include "common.h"
+
 double micros_per_rotation = 580000.0;
 unsigned long lastMicros = micros();
 double lastAngle = 0;
@@ -10,7 +13,7 @@ double curAngle() {
   unsigned long diff = curMicros - lastMicros;
   double rotation_fraction = ((double) diff) / micros_per_rotation;
   double rotation_rads = rotation_fraction * 2 * PI;
-  double newAngle = fmod(lastAngle + rotation_rads, 2 * PI);
+  double newAngle = rad_mod(lastAngle + rotation_rads);
 
   updates += 1;
   if (newAngle < lastAngle) { 
