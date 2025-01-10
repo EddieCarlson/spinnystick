@@ -9,6 +9,8 @@ import sys
 # outputs one 12-bit rgb hex value per pixel, one ray of pixels per line
 image_in = Image.open(sys.argv[1])
 
+threshold = 181 * 3
+
 def crop_center(pil_img, crop_width, crop_height):
     img_width, img_height = pil_img.size
     return pil_img.crop(((img_width - crop_width) // 2,
@@ -62,8 +64,15 @@ green_pixels = get_pixel_values(g_channel, coordinates)
 blue_pixels = get_pixel_values(b_channel, coordinates)
 
 rgb_pixels = list(zip(red_pixels, green_pixels, blue_pixels))
+rgb_pixels_filtered = []
+for [r, g, b] in rgb_pixels:
+  if (int(r)+ int(g) + int(b)) > threshold:
+    rgb_pixels_filtered.append([0, 0, 0])
+  else:
+    rgb_pixels_filtered.append([r, g, b])
+
 # div pixel values by 16 to convert to 12-bit color
-rgb_pixels_12bit = ["".join([format(v, 'x') for v in [r // 16, g // 16, b // 16]]) for [r, g, b] in rgb_pixels]
+rgb_pixels_12bit = ["".join([format(v, 'x') for v in [r // 16, g // 16, b // 16]]) for [r, g, b] in rgb_pixels_filtered]
 
 ray_pixels_list = [",".join(rgb_pixels_12bit[(ray * num_pixels):((ray + 1) * num_pixels)]) for ray in range(0, num_rays)]
 
