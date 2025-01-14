@@ -3,7 +3,7 @@
 #include <FastLED.h>
 #include "../common.h"
 #include "../angle.h"
-#include "../strip.h"
+// #include "../strip.h"
 
 // TODO: not NUMPIXELS but COL_HEIGHT....here and everywhere...
 

@@ -1,3 +1,5 @@
+#pragma once
+
 #include "FastIMU.h"
 #include <Wire.h>
 

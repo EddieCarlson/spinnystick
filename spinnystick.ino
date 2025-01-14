@@ -9,6 +9,7 @@
 #include "animation/circle.h"
 #include "animation/raydisplay.h"
 #include "animation/polar_calc.h"
+#include <Adafruit_DotStar.h>
 
 // #define SDCS 0
 // #define SDMISO 1
@@ -23,10 +24,10 @@ void setup() {
   Serial.begin(115200);
 
   strip.begin();
-  strip.setBrightness(70); // out of...255?
+  strip.setBrightness(255); // out of...255?
 
-  set_image();
-  setToBlack();
+  // set_image();
+  // setToBlack();
 
   while(!Serial) { ; }
 
@@ -139,10 +140,34 @@ void setColorRay(double rad) {
   }
 }
 
+unsigned long lastLoopPrint = micros();
+
 void loop() {
+  if (micros() - lastLoopPrint > 1000000) {
+    Serial.println("loop");
+    lastLoopPrint = micros();
+  }
   displayCardioids();
+  // delayMicroseconds(500);
   //gyro();
    //setColorRay(curAngle());
+  //  Serial.println("loop");
+  //   strip.setPixelColor(0, 100, 0, 200);
+  //   strip.setPixelColor(5, 100, 0, 200);
+  //   strip.setPixelColor(6, 100, 0, 200);
+  //   strip.setPixelColor(7, 100, 0, 200);
+  //   strip.setPixelColor(8, 100, 0, 200);
+  //   strip.setPixelColor(9, 100, 0, 200);
+  //   strip.setPixelColor(11, 100, 0, 200);
+  //   strip.setPixelColor(12, 100, 0, 200);
+  //   strip.setPixelColor(10, 100, 0, 200);
+  //   strip.setPixelColor(13, 100, 0, 200);
+  //   strip.setPixelColor(15, 100, 0, 200); 
+  //   strip.setPixelColor(18, 100, 0, 200);
+  //   strip.setPixelColor(20, 100, 0, 200);
+  //   strip.setPixelColor(21, 100, 0, 200);
+  //   strip.show();
+  //   delay(2000);
     // curAngle();
     // setCircle();
     // strip.show();
