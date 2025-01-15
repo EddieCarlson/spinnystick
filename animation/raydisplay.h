@@ -43,6 +43,8 @@ void setTestImage() {
   }
 }
 
+int threshold = 255 + 255 + 40;
+
 void calculate_ray(double cur_rad, uint32_t *ray) {
   double cur_ray = fmod(((double) NUM_RAYS) * cur_rad / (2 * PI), NUM_RAYS);
   int under_ray_idx = floor(cur_ray);
@@ -63,7 +65,11 @@ void calculate_ray(double cur_rad, uint32_t *ray) {
     uint8_t blend_g = max(0, floor(sqrt(pow(under_ray[px].g * under_weight, 2) + pow(over_ray[px].g * over_weight, 2))));
     uint8_t blend_b = max(0, floor(sqrt(pow(under_ray[px].b * under_weight, 2) + pow(over_ray[px].b * over_weight, 2))));
 
-    rayToDisplay[px] = rgb_to_hex(blend_r, blend_g, blend_b);
+    if (blend_r + blend_g + blend_b < threshold) {
+      rayToDisplay[px] = rgb_to_hex(blend_r, blend_g, blend_b);
+    } else {
+      rayToDisplay[px] = 0;
+    }
   }
 }
 
@@ -78,7 +84,7 @@ void displayRay() {
   strip.show();
 }
 
-void display_test_image() {
+void display_ray_image() {
   calculate_ray(curAngle(), rayToDisplay);
   displayRay();
 }

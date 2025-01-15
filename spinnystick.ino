@@ -10,8 +10,9 @@
 #include "animation/raydisplay.h"
 #include "animation/polar_calc.h"
 #include <Adafruit_DotStar.h>
+#include <ctype.h>
 
-// #include <SD.h>
+#include <SD.h>
 
 // #define SDCS 0
 // #define SDMISO 1
@@ -20,68 +21,81 @@
 
 // TODO: get fucking spi working faster
 
-// File myFile;
+File myFile;
 
-// void readFile() {
-//   myFile = SD.open("mandala.txt");
-//   int rays = 0;
-//   int px4 = 0;
-//   while (myFile.available()) {
-//     switch ((char)myFile.peek()) {
-//       case ',':
-//       Serial.print(",");
-//       myFile.read();
-//       break;
-//       case '\r':
-//       Serial.println();
-//       myFile.read();myFile.read();
-//       break;
+uint8_t charToHex(char hexChar) {
+  if (hexChar >= '0' && hexChar <= '9') {
+      return hexChar - '0';
+  } else if (hexChar >= 'A' && hexChar <= 'F') {
+      return hexChar - 'A' + 10;
+  } else if (hexChar >= 'a' && hexChar <= 'f') {
+      return hexChar - 'a' + 10;
+  } else {
+    Serial.print("bad hex-char conversion from: ");
+    Serial.println(hexChar);
+    return 0;
+  }
+}
 
-//       default:
-//       char r1 = myFile.read();
-//       char g1 = myFile.read();
-//       char b1 = myFile.read();
-//       myFile.read();
-//       char r2 = myFile.read();
-//       char g2 = myFile.read();
-//       char b2 = myFile.read();
-//       myFile.read();
-//       char r3 = myFile.read();
-//       char g3 = myFile.read();
-//       char b3 = myFile.read();
-//       myFile.read();
-//       char r4 = myFile.read();
-//       char g4 = myFile.read();
-//       char b4 = myFile.read();
+void readFile() {
+  myFile = SD.open("mandala.txt");
+  int ray = 0;
+  int px = 0;
+  while (myFile.available()) {
+    switch ((char)myFile.peek()) {
+      case ',':
+      Serial.print(",");
+      myFile.read();
+      break;
+      case '\n':
+      ray++;
+      px = 0;
+      Serial.println();
+      myFile.read();
+      break;
 
-       
-//       // ray4Pixels[rays][px4] = FourPixels(r1, g1, b1, r2, g2, b2, r3, g3, b3, r4, g4, b4);
+      default:
+      uint8_t r = min(255, charToHex(myFile.read()) * 16);
+      uint8_t g = min(255, charToHex(myFile.read()) * 16);
+      uint8_t b = min(255, charToHex(myFile.read()) * 16);
 
-//       // Serial.print(newValue);
-//     }
-//   }
-// }
+      Serial.print("(");
+      Serial.print(r);
+      Serial.print(",");
+      Serial.print(g);
+      Serial.print(",");
+      Serial.print(b);
+      Serial.print(")");
+
+      rays[ray][px] = CRGB(r, g, b);
+
+      px++;
+    }
+  }
+  myFile.close();
+}
 
 void setup() {
+  Serial.begin(9600);
+  while(!Serial) { ; }
+
+  if (!SD.begin(BUILTIN_SDCARD)) {
+    Serial.println("SD card initialization failed!");
+    return;
+  } else {
+    Serial.println("SD card init successful");
+    readFile();
+  }
+
   SPI.begin();
   SPI.beginTransaction(SPISettings(16000000, MSBFIRST, SPI_MODE0));
-
-  Serial.begin(9600);
-  setTestImage();
-  // if (!SD.begin(BUILTIN_SDCARD)) {
-  //   Serial.println("SD card initialization failed!");
-  //   return;
-  // } else {
-  //   Serial.println("SD card init successful");
-  // }
+  Serial.println("spi began");
 
   strip.begin();
-  strip.setBrightness(70); // out of...255?
+  strip.setBrightness(50); // out of...255?
 
   // set_image();
   // setToBlack();
-
-  while(!Serial) { ; }
 
   Serial.println("hi");
 
@@ -199,10 +213,14 @@ void setColorRayNothing(double angle) {
 unsigned long lastLoopPrint = micros();
 
 void loop() {
-  display_test_image();
+  unsigned long start = micros();
+  display_ray_image();
+  unsigned long duration2 = micros() - start;
   bool print = micros() - lastLoopPrint > 1000000;
   if (micros() - lastLoopPrint > 1000000) {
     Serial.println("loop");
+    Serial.print("display ray image micros: ");
+    Serial.println(duration2);
     lastLoopPrint = micros();
   }
 
