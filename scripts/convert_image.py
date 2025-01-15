@@ -62,10 +62,14 @@ green_pixels = get_pixel_values(g_channel, coordinates)
 blue_pixels = get_pixel_values(b_channel, coordinates)
 
 rgb_pixels = list(zip(red_pixels, green_pixels, blue_pixels))
+
+
 # div pixel values by 16 to convert to 12-bit color
 rgb_pixels_12bit = ["".join([format(v, 'x') for v in [r // 16, g // 16, b // 16]]) for [r, g, b] in rgb_pixels]
 
+
 ray_pixels_list = [",".join(rgb_pixels_12bit[(ray * num_pixels):((ray + 1) * num_pixels)]) for ray in range(0, num_rays)]
+
 
 for pxs in ray_pixels_list:
   print(pxs)
