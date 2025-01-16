@@ -38,7 +38,7 @@ uint8_t charToHex(char hexChar) {
 }
 
 void readFile() {
-  myFile = SD.open("mandala.txt");
+  myFile = SD.open("eddie_mandala.txt");
   int ray = 0;
   int px = 0;
   while (myFile.available()) {
