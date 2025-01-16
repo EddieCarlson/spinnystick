@@ -21,7 +21,7 @@
 
 // TODO: get fucking spi working faster
 
-File myFile;
+// File myFile;
 
 uint8_t charToHex(char hexChar) {
   if (hexChar >= '0' && hexChar <= '9') {
@@ -37,8 +37,8 @@ uint8_t charToHex(char hexChar) {
   }
 }
 
-void readFile() {
-  myFile = SD.open("eddie_mandala.txt");
+void importImageFromSD(String name) {
+  File myFile = SD.open(name.c_str());
   int ray = 0;
   int px = 0;
   while (myFile.available()) {
@@ -75,16 +75,46 @@ void readFile() {
   myFile.close();
 }
 
+void readFileFromSerial() {
+  delay(1000);
+  uint32_t startMillis = millis();
+  Serial.println("waiting for serial input");
+  while(!Serial.available()) {
+    if (millis() - startMillis < 300000) {
+      delay(1000);
+    } else {
+      Serial.println("serial input received");
+      return;
+    }
+  }
+  File myFile;
+  String title = Serial.readStringUntil('\n', 100);
+  Serial.print("title: ");
+  Serial.println(title);
+  myFile = SD.open(title.c_str(), FILE_WRITE);
+  while(Serial.peek()) {
+    String line = Serial.readStringUntil('\n', 10000);
+    if (line == "ENDFILE") {
+      myFile.write(line.c_str(), line.length());
+      myFile.print('\n');
+    }
+    break;
+  }
+  myFile.close();
+  delay(10);
+}
+
 void setup() {
   Serial.begin(9600);
   while(!Serial) { ; }
 
+  readFileFromSerial();
   if (!SD.begin(BUILTIN_SDCARD)) {
     Serial.println("SD card initialization failed!");
     return;
   } else {
     Serial.println("SD card init successful");
-    readFile();
+    // importImageFromSD("eddie_mandala3.txt");
   }
 
   SPI.begin();
@@ -92,7 +122,7 @@ void setup() {
   Serial.println("spi began");
 
   strip.begin();
-  strip.setBrightness(50); // out of...255?
+  strip.setBrightness(80); // out of...255?
 
   // set_image();
   // setToBlack();
