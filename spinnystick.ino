@@ -47,7 +47,7 @@ void importImageFromSD(String name) {
       Serial.print(",");
       myFile.read();
       break;
-      case '\n':
+      case '|':
       ray++;
       px = 0;
       Serial.println();
@@ -87,34 +87,41 @@ void readFileFromSerial() {
       return;
     }
   }
-  File myFile;
-  String title = Serial.readStringUntil('\n', 100);
-  Serial.print("title: ");
-  Serial.println(title);
-  myFile = SD.open(title.c_str(), FILE_WRITE);
-  while(Serial.peek()) {
-    String line = Serial.readStringUntil('\n', 10000);
-    if (line == "ENDFILE") {
-      myFile.write(line.c_str(), line.length());
-      myFile.print('\n');
+  String title = Serial.readStringUntil('|', 200);
+  File myFile = SD.open(title.c_str(), FILE_WRITE);
+  while(true) {
+    myFile.write(Serial.read());
+    if (!Serial.available()) {
+      delay(10);
+      if (!Serial.available()) {
+        break;
+      }
     }
-    break;
   }
+  // while(Serial.peek()) {
+  //   String line = Serial.readStringUntil('\n', 100000);
+  //   if (line == "ENDFILE") {
+  //     break;
+  //   }
+  //   myFile.println(line);
+  // }
+  Serial.println("finished writing file");
+  delay(50);
   myFile.close();
-  delay(10);
+  delay(20);
 }
 
 void setup() {
   Serial.begin(9600);
   while(!Serial) { ; }
 
-  readFileFromSerial();
   if (!SD.begin(BUILTIN_SDCARD)) {
     Serial.println("SD card initialization failed!");
     return;
   } else {
+    // readFileFromSerial();
     Serial.println("SD card init successful");
-    // importImageFromSD("eddie_mandala3.txt");
+    importImageFromSD("eddie_mandala3.txt");
   }
 
   SPI.begin();
@@ -247,7 +254,7 @@ void loop() {
   display_ray_image();
   unsigned long duration2 = micros() - start;
   bool print = micros() - lastLoopPrint > 1000000;
-  if (micros() - lastLoopPrint > 1000000) {
+  if (micros() - lastLoopPrint > 20000000) {
     Serial.println("loop");
     Serial.print("display ray image micros: ");
     Serial.println(duration2);
