@@ -42,6 +42,9 @@ void importImageFromSD(String name) {
   int ray = 0;
   int px = 0;
   while (myFile.available()) {
+    if (ray >= NUM_RAYS) {
+      break;
+    }
     switch ((char)myFile.peek()) {
       case ',':
       Serial.print(",");
