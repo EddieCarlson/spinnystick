@@ -102,28 +102,22 @@ void calculate_current_ray(uint32_t *ray) {
   calculate_ray(curAngle(), ray);
 }
 
-uint32_t brightness_byte_or = ((0b11100000 | BRIGHTNESS) << 24) & 0xFF000000;
+uint32_t brightness_byte = ((0b11100000 | BRIGHTNESS) << 24) & 0xFF000000;
 
 void displayRaySPI() {
   SPI.transfer32((uint32_t) 0);
   for(int i = 0; i < COL_HEIGHT; i++) {
-    SPI.transfer32((brightness_byte_or | rayToDisplay[i]));
+    SPI.transfer32((brightness_byte | rayToDisplay[i]));
   }
   for(int i = 0; i < 8; i++) {
-    SPI.transfer32(brightness_byte_or);
+    SPI.transfer32(brightness_byte);
   }
   for(int i = COL_HEIGHT - 1; i >= 0; i--) {
-    SPI.transfer32((brightness_byte_or | rayToDisplay[i]));
+    SPI.transfer32((brightness_byte | rayToDisplay[i]));
   }
-  // TODO: send FFF multiple times?
   for (uint16_t i = 0; i < (COL_HEIGHT + 14)/16; i++) {
     SPI.transfer(0);
   }
-  // digitalWrite(DATAPIN, LOW);
-  // pinMode(DATAPIN, OUTPUT);
-  // digitalWrite(CLOCKPIN, LOW);
-  // pinMode(CLOCKPIN, OUTPUT);
-  // SPI.transfer32(0);
   return;
 }
 
@@ -135,6 +129,6 @@ void displayRay() {
 }
 
 void display_ray_image() { // takes about 242 micros
-  calculate_ray(curAngle(), rayToDisplay); // takes about 30 micros (12% of time)
+  calculate_ray(curAngle(), rayToDisplay); // takes about 30 micros (12% of time - 242)
   displayRaySPI();
 }

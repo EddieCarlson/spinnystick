@@ -38,7 +38,7 @@ num_rays = 360 * 3 # 1/3 degrees between each ray
 num_pixels = 96
 rope_pixels = 25 # number of pixels that would fit between pixel 0 on the rod and the center of spinning
 center_px = num_pixels + rope_pixels
-scale_factor = square_image.size[0] / 278
+scale_factor = square_image.size[0] / (center_px * 2.0)
 
 rads_per_ray = 2 * math.pi / num_rays
 
