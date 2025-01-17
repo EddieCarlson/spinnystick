@@ -114,6 +114,7 @@ void readFileFromSerial() {
   delay(20);
 }
 
+
 void setup() {
   Serial.begin(9600);
   while(!Serial) { ; }
@@ -128,11 +129,15 @@ void setup() {
   }
 
   SPI.begin();
-  SPI.beginTransaction(SPISettings(16000000, MSBFIRST, SPI_MODE0));
+  SPI.setMOSI(DATAPIN);
+  SPI.setSCK(CLOCKPIN);
+  SPI.beginTransaction(SPISettings(40000000, MSBFIRST, SPI_MODE0));
+  SPI.setMOSI(DATAPIN);
+  SPI.setSCK(CLOCKPIN);
   Serial.println("spi began");
 
-  strip.begin();
-  strip.setBrightness(80); // out of...255?
+  // strip.begin();
+  // strip.setBrightness(80); // out of...255?
 
   // set_image();
   // setToBlack();
@@ -256,8 +261,7 @@ void loop() {
   unsigned long start = micros();
   display_ray_image();
   unsigned long duration2 = micros() - start;
-  bool print = micros() - lastLoopPrint > 1000000;
-  if (micros() - lastLoopPrint > 20000000) {
+  if (micros() - lastLoopPrint > 2000000) {
     Serial.println("loop");
     Serial.print("display ray image micros: ");
     Serial.println(duration2);

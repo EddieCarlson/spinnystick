@@ -4,8 +4,33 @@
 #include "../common.h"
 #include "../angle.h"
 #include "../strip.h"
+#include <SPI.h>
 
 // TODO: not NUMPIXELS but COL_HEIGHT....here and everywhere...
+
+// class APAColor {
+//   public:
+
+//   uint8_t brightness;
+//   uint8_t r;
+//   uint8_t g;
+//   uint8_t b;
+
+//   APAColor(uint8_t _brightness, uint8_t _r, uint8_t _g, uint8_t _b) {
+//     _brightness = 0b11100000 | brightness;
+//     r = _r;
+//     g = _g;
+//     b = _b;
+//   }
+// };
+
+// class APAStripPayload {
+//   uint32_t start;
+//   APAColor *colors;
+//   uint32_t end;
+
+//   APAStripPayload(APAColors *_colors, )
+// }
 
 CRGB rays[NUM_RAYS][COL_HEIGHT];
 
@@ -77,6 +102,31 @@ void calculate_current_ray(uint32_t *ray) {
   calculate_ray(curAngle(), ray);
 }
 
+uint32_t brightness_byte_or = ((0b11100000 | BRIGHTNESS) << 24) & 0xFF000000;
+
+void displayRaySPI() {
+  SPI.transfer32((uint32_t) 0);
+  for(int i = 0; i < COL_HEIGHT; i++) {
+    SPI.transfer32((brightness_byte_or | rayToDisplay[i]));
+  }
+  for(int i = 0; i < 8; i++) {
+    SPI.transfer32(brightness_byte_or);
+  }
+  for(int i = COL_HEIGHT - 1; i >= 0; i--) {
+    SPI.transfer32((brightness_byte_or | rayToDisplay[i]));
+  }
+  // TODO: send FFF multiple times?
+  for (uint16_t i = 0; i < (COL_HEIGHT + 14)/16; i++) {
+    SPI.transfer(0);
+  }
+  // digitalWrite(DATAPIN, LOW);
+  // pinMode(DATAPIN, OUTPUT);
+  // digitalWrite(CLOCKPIN, LOW);
+  // pinMode(CLOCKPIN, OUTPUT);
+  // SPI.transfer32(0);
+  return;
+}
+
 void displayRay() {
   for(int i = 0; i < COL_HEIGHT; i++) {
     setBothSides(i, rayToDisplay[i]);
@@ -86,5 +136,6 @@ void displayRay() {
 
 void display_ray_image() {
   calculate_ray(curAngle(), rayToDisplay);
-  displayRay();
+  // displayRay();
+  displayRaySPI();
 }
