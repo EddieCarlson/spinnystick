@@ -101,13 +101,6 @@ void readFileFromSerial() {
       }
     }
   }
-  // while(Serial.peek()) {
-  //   String line = Serial.readStringUntil('\n', 100000);
-  //   if (line == "ENDFILE") {
-  //     break;
-  //   }
-  //   myFile.println(line);
-  // }
   Serial.println("finished writing file");
   delay(50);
   myFile.close();

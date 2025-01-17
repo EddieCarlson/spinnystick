@@ -134,8 +134,7 @@ void displayRay() {
   strip.show();
 }
 
-void display_ray_image() {
-  calculate_ray(curAngle(), rayToDisplay);
-  // displayRay();
+void display_ray_image() { // takes about 242 micros
+  calculate_ray(curAngle(), rayToDisplay); // takes about 30 micros (12% of time)
   displayRaySPI();
 }
