@@ -7,7 +7,8 @@ import sys
 
 # run via: `python convert_image.py <image_filepath> > hex_values`
 # outputs one 12-bit rgb hex value per pixel, one ray of pixels per line
-image_in = Image.open(sys.argv[1])
+input_filename = sys.argv[1]
+image_in = Image.open(input_filename)
 
 def crop_center(pil_img, crop_width, crop_height):
     img_width, img_height = pil_img.size
@@ -68,8 +69,8 @@ rgb_pixels = list(zip(red_pixels, green_pixels, blue_pixels))
 rgb_pixels_12bit = ["".join([format(v, 'x') for v in [r // 16, g // 16, b // 16]]) for [r, g, b] in rgb_pixels]
 
 
-ray_pixels_list = [",".join(rgb_pixels_12bit[(ray * num_pixels):((ray + 1) * num_pixels)]) for ray in range(0, num_rays)]
+ray_pixels_pipe_list = "|".join([",".join(rgb_pixels_12bit[(ray * num_pixels):((ray + 1) * num_pixels)]) for ray in range(0, num_rays)])
 
+output_filename = input_filename.split(".")[0] + ".txt"
 
-for pxs in ray_pixels_list:
-  print(pxs)
+print(output_filename + "|" + ray_pixels_pipe_list + "|")

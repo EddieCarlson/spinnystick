@@ -14,15 +14,6 @@
 
 #include <SD.h>
 
-// #define SDCS 0
-// #define SDMISO 1
-// #define SDMOSI 26
-// #define SDSCK 27
-
-// TODO: get fucking spi working faster
-
-// File myFile;
-
 uint8_t charToHex(char hexChar) {
   if (hexChar >= '0' && hexChar <= '9') {
       return hexChar - '0';
@@ -47,28 +38,22 @@ void importImageFromSD(String name) {
     }
     switch ((char)myFile.peek()) {
       case ',':
-      Serial.print(",");
       myFile.read();
       break;
       case '|':
       ray++;
       px = 0;
-      Serial.println();
       myFile.read();
       break;
 
       default:
-      uint8_t r = min(255, charToHex(myFile.read()) * 16);
-      uint8_t g = min(255, charToHex(myFile.read()) * 16);
-      uint8_t b = min(255, charToHex(myFile.read()) * 16);
+      int ri = myFile.read(); 
+      int gi = myFile.read(); 
+      int bi = myFile.read(); 
 
-      Serial.print("(");
-      Serial.print(r);
-      Serial.print(",");
-      Serial.print(g);
-      Serial.print(",");
-      Serial.print(b);
-      Serial.print(")");
+      uint8_t r = min(255, charToHex(ri) * 16);
+      uint8_t g = min(255, charToHex(gi) * 16);
+      uint8_t b = min(255, charToHex(bi) * 16);
 
       rays[ray][px] = CRGB(r, g, b);
 
@@ -78,7 +63,7 @@ void importImageFromSD(String name) {
   myFile.close();
 }
 
-void readFileFromSerial() {
+String readFileFromSerial() {
   delay(1000);
   uint32_t startMillis = millis();
   Serial.println("waiting for serial input");
@@ -105,8 +90,11 @@ void readFileFromSerial() {
   delay(50);
   myFile.close();
   delay(20);
+  return title;
 }
 
+const bool readSerial = false;
+const String defaultSDImageFilename = "eddie_mandala4.txt";
 
 void setup() {
   Serial.begin(9600);
@@ -116,15 +104,18 @@ void setup() {
     Serial.println("SD card initialization failed!");
     return;
   } else {
-    // readFileFromSerial();
     Serial.println("SD card init successful");
-    importImageFromSD("eddie_mandala3.txt");
+    String filename = defaultSDImageFilename;
+    if (readSerial) {
+      filename = readFileFromSerial();
+    }
+    importImageFromSD(filename);
   }
 
   SPI.begin();
   SPI.setMOSI(DATAPIN);
   SPI.setSCK(CLOCKPIN);
-  SPI.beginTransaction(SPISettings(40000000, MSBFIRST, SPI_MODE0));
+  SPI.beginTransaction(SPISettings(32000000, MSBFIRST, SPI_MODE0));
   SPI.setMOSI(DATAPIN);
   SPI.setSCK(CLOCKPIN);
   Serial.println("spi began");
@@ -159,35 +150,6 @@ float dist(float x1, float y1, float x2, float y2) {
   return pow(x2 - x1, 2) + pow(y2 - y1, 2);
 }
 
-// set reference image all black
-// void reset_image() {
-//   for(int row = 0; row < image_size; row++) {
-//     for(int col = 0; col < image_size; col++) {
-//       image[col][row] = CRGB::Black;
-//     }
-//   }
-// }
-
-// void set_image() {
-//   reset_image();
-
-//   for(int col = 50; col < 80; col++) {
-//     for(int row = 50; row < 80; row++) {
-//       if ((col < 58 || col > 72) || (row < 58 || row > 72)) {
-//         image[col][row] = CRGB::Aquamarine;
-//       }
-//     }
-//   }
-
-//   for(int col = 180; col < 210; col++) {
-//     for(int row = 180; row < 210; row++) {
-//       if ((col < 188 || col > 202) || (row < 188 || row > 202)) {
-//         image[col][row] = CRGB::Magenta;
-//       }
-//     }
-//   }
-// }
-
 
 // for testing min time to push data over SPI
 void setColorRayNothing(double angle) {
@@ -197,56 +159,6 @@ void setColorRayNothing(double angle) {
   }
   strip.show();
 }
-
-// void setColorRay(double rad) {
-//   for (int height = 0; height < COL_HEIGHT; height++) {
-//     strip.setPixelColor(height, 0, 0, 0);
-//     // TODO - direction of rad increase correct?
-//     float x = (ROPE_PIXELS + height) * cos(rad); 
-//     float y = (ROPE_PIXELS + height) * sin(rad);
-
-//     int floor_x = ROPE_PIXELS + COL_HEIGHT + floor(x);
-//     int floor_y = ROPE_PIXELS + COL_HEIGHT + floor(y);
-//     int ceil_x = ROPE_PIXELS + COL_HEIGHT + ceil(x);
-//     int ceil_y = ROPE_PIXELS + COL_HEIGHT + ceil(y);
-
-//     //TODO - substitute floor/ceil
-//     float ll_dist = 1 - dist(x, y, floor_x, floor_y);
-//     float lr_dist = 1 - dist(x, y, ceil_x, floor_y);
-//     float tl_dist = 1 - dist(x, y, floor_x, ceil_y);
-//     float tr_dist = 1 - dist(x, y, ceil_x, ceil_y);
-
-//     float dist_sum = ll_dist + lr_dist + tl_dist + tr_dist;
-//     float adj_ll_d = ll_dist / dist_sum;
-//     float adj_lr_d = lr_dist / dist_sum;
-//     float adj_tl_d = tl_dist / dist_sum;
-//     float adj_tr_d = tr_dist / dist_sum;
-
-//     // Serial.print("(");
-//     // Serial.print(floor_x);
-//     // Serial.print(", ");
-//     // Serial.print(floor_y);
-//     // Serial.print("), ");
-
-//     CRGB ll_color = image[floor_x][floor_y];
-//     CRGB lr_color = image[ceil_x][floor_y];
-//     CRGB tl_color = image[floor_x][ceil_y];
-//     CRGB tr_color = image[ceil_x][ceil_y];
-
-//     // TODO - uhh lol i think this maybe works? maybe round and bound instead of floor?
-//     uint8_t blend_r = floor(sqrt(pow(ll_color[0] * adj_ll_d, 2) + pow(lr_color[0] * adj_lr_d, 2) + pow(tl_color[0] * adj_tl_d, 2) + pow(tr_color[0] * adj_tr_d, 2)));
-//     uint8_t blend_g = floor(sqrt(pow(ll_color[1] * adj_ll_d, 2) + pow(lr_color[1] * adj_lr_d, 2) + pow(tl_color[1] * adj_tl_d, 2) + pow(tr_color[1] * adj_tr_d, 2)));
-//     uint8_t blend_b = floor(sqrt(pow(ll_color[2] * adj_ll_d, 2) + pow(lr_color[2] * adj_lr_d, 2) + pow(tl_color[2] * adj_tl_d, 2) + pow(tr_color[2] * adj_tr_d, 2)));
-//     // Serial.println(blend_b);
-//     if (blend_r + blend_g + blend_b > 4) { 
-//       strip.setPixelColor(height, blend_r, blend_g, blend_b);
-//       strip.setPixelColor(200 - height, blend_r, blend_g, blend_b);
-//     } else {
-//       strip.setPixelColor(height, 0, 0, 0);
-//       strip.setPixelColor(200 - height, 0, 0, 0);
-//     }
-//   }
-// }
 
 unsigned long lastLoopPrint = micros();
 
@@ -261,29 +173,6 @@ void loop() {
     lastLoopPrint = micros();
   }
 
-
-
-
   // displayCardioids();
-  // delayMicroseconds(500);
-  //gyro();
-   //setColorRay(curAngle());
-  //  Serial.println("loop");
-
-
-
-
-
-
-    // strip.setPixelColor(0, 100, 0, 200);
-    // strip.setPixelColor(5, 100, 0, 200);
-    // strip.setPixelColor(15, 100, 0, 200);
-    // unsigned long startMicros = micros();
-    // strip.show();
-    // unsigned long duration = micros() - startMicros;
-    // if (print) {
-    //   Serial.println(duration);
-    // }
-    // delay(1000);
 }
 
