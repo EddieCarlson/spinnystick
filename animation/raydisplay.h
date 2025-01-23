@@ -69,6 +69,7 @@ void setTestImage() {
 }
 
 int threshold = 255 + 255 + 255;
+double brightness_factor = 0.33; // 0 - 1. 0.35 already quite bright
 
 void calculate_ray(double cur_rad, CRGB *ray) {
   double cur_ray = fmod(((double) NUM_RAYS) * cur_rad / (2 * PI), NUM_RAYS);
@@ -86,17 +87,15 @@ void calculate_ray(double cur_rad, CRGB *ray) {
   double under_weight = 1 - over_weight;
 
   for(int px = 0; px < COL_HEIGHT; px++) {
-    uint8_t blend_r = max(0, floor(sqrt(pow(under_ray[px].r * under_weight, 2) + pow(over_ray[px].r * over_weight, 2))));
-    uint8_t blend_g = max(0, floor(sqrt(pow(under_ray[px].g * under_weight, 2) + pow(over_ray[px].g * over_weight, 2))));
-    uint8_t blend_b = max(0, floor(sqrt(pow(under_ray[px].b * under_weight, 2) + pow(over_ray[px].b * over_weight, 2))));
+    double blend_r = sqrt(pow(under_ray[px].r * under_weight, 2) + pow(over_ray[px].r * over_weight, 2));
+    double blend_g = sqrt(pow(under_ray[px].g * under_weight, 2) + pow(over_ray[px].g * over_weight, 2));
+    double blend_b = sqrt(pow(under_ray[px].b * under_weight, 2) + pow(over_ray[px].b * over_weight, 2));
 
-    uint16_t sum = blend_r + blend_g + blend_b;
+    uint8_t r = min(255, max(0, round(brightness_factor * blend_r)));
+    uint8_t g = min(255, max(0, round(brightness_factor * blend_g)));
+    uint8_t b = min(255, max(0, round(brightness_factor * blend_b)));
 
-    if (sum < threshold) {
-      rayToDisplay[px] = CRGB(blend_r, blend_g, blend_b);
-    } else {
-      rayToDisplay[px] = CRGB(0, 0, 0);
-    }
+    rayToDisplay[px] = CRGB(r, g, b);
   }
 }
 
@@ -107,6 +106,7 @@ void calculate_current_ray(CRGB *ray) {
 uint8_t brightness_byte = (0b11100000 | BRIGHTNESS);
 uint32_t brightness_only = (uint32_t) ((brightness_byte << 24) & 0xFF000000);
 
+// TODO: avoid non-31 brightness (flickering)
 void display_pixel_frame(uint8_t brightness, uint8_t r, uint8_t g, uint8_t b) {
   uint32_t frame = brightness_only | ((uint32_t) (b << 16) & 0xFF0000) | ((uint32_t) ((g << 8) & 0xFF00)) | ((uint32_t) ((r & 0xFF)));
   SPI.transfer32(frame);
@@ -140,7 +140,7 @@ void displayRaySPI() {
 //   strip.show();
 // }
 
-void display_ray_image() { // takes about 242 micros (370 now with non-32 transfers)
+void display_ray_image() { // takes about 290 micros (@ 32MHz)
   calculate_ray(curAngle(), rayToDisplay); // takes about 30 micros (12% of time - 242)
   displayRaySPI();
 }
