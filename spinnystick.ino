@@ -94,11 +94,16 @@ String readFileFromSerial() {
 }
 
 const bool readSerial = false;
-const String defaultSDImageFilename = "eddie_mandala4.txt";
+const String defaultSDImageFilename = "eddie_mandala5.txt";
+
+void waitForSerial() {
+  uint32_t start = millis();
+  while(!Serial && (millis() - start < 2000)) { ; }
+}
 
 void setup() {
   Serial.begin(9600);
-  while(!Serial) { ; }
+  waitForSerial();
 
   if (!SD.begin(BUILTIN_SDCARD)) {
     Serial.println("SD card initialization failed!");
@@ -120,15 +125,8 @@ void setup() {
   SPI.setSCK(CLOCKPIN);
   Serial.println("spi began");
 
-  // strip.begin();
-  // strip.setBrightness(80); // out of...255?
-
-  // set_image();
-  // setToBlack();
-
   Serial.println("hi");
 
-  // readFile();
   // initIMU(IMU, IMU_ADDRESS);
 }
 
@@ -140,11 +138,6 @@ void setToBlack() {
   }
   strip.show();
 }
-
-// CRGB image[image_size][image_size];
-
-// float angle_inc = 2.0 * PI / NUM_RAYS;
-// CRGB rays[NUM_RAYS][COL_HEIGHT];
 
 float dist(float x1, float y1, float x2, float y2) {
   return pow(x2 - x1, 2) + pow(y2 - y1, 2);

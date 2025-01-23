@@ -6,7 +6,7 @@
 
 #define DATAPIN    11
 #define CLOCKPIN   13
-#define BRIGHTNESS 15
+#define BRIGHTNESS 20
 
 Adafruit_DotStar strip(NUMPIXELS, DATAPIN, CLOCKPIN, DOTSTAR_BGR);
 

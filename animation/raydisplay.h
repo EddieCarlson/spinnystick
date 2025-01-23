@@ -90,7 +90,9 @@ void calculate_ray(double cur_rad, uint32_t *ray) {
     uint8_t blend_g = max(0, floor(sqrt(pow(under_ray[px].g * under_weight, 2) + pow(over_ray[px].g * over_weight, 2))));
     uint8_t blend_b = max(0, floor(sqrt(pow(under_ray[px].b * under_weight, 2) + pow(over_ray[px].b * over_weight, 2))));
 
-    if (blend_r + blend_g + blend_b < threshold) {
+    uint16_t sum = blend_r + blend_g + blend_b;
+
+    if (sum < threshold) {
       rayToDisplay[px] = rgb_to_hex(blend_r, blend_g, blend_b);
     } else {
       rayToDisplay[px] = 0;
