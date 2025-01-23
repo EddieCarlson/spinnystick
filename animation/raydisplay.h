@@ -34,7 +34,7 @@
 
 CRGB rays[NUM_RAYS][COL_HEIGHT];
 
-uint32_t rayToDisplay[COL_HEIGHT];
+CRGB rayToDisplay[COL_HEIGHT];
 
 double rad_per_ray = 2.0 * PI / ((double) NUM_RAYS);
 
@@ -70,7 +70,7 @@ void setTestImage() {
 
 int threshold = 255 + 255 + 255;
 
-void calculate_ray(double cur_rad, uint32_t *ray) {
+void calculate_ray(double cur_rad, CRGB *ray) {
   double cur_ray = fmod(((double) NUM_RAYS) * cur_rad / (2 * PI), NUM_RAYS);
   int under_ray_idx = floor(cur_ray);
   int over_ray_idx = (under_ray_idx + 1) % NUM_RAYS;
@@ -93,14 +93,14 @@ void calculate_ray(double cur_rad, uint32_t *ray) {
     uint16_t sum = blend_r + blend_g + blend_b;
 
     if (sum < threshold) {
-      rayToDisplay[px] = rgb_to_hex(blend_r, blend_g, blend_b);
+      rayToDisplay[px] = CRGB(blend_r, blend_g, blend_b);
     } else {
-      rayToDisplay[px] = 0;
+      rayToDisplay[px] = CRGB(0, 0, 0);
     }
   }
 }
 
-void calculate_current_ray(uint32_t *ray) {
+void calculate_current_ray(CRGB *ray) {
   calculate_ray(curAngle(), ray);
 }
 
@@ -114,11 +114,8 @@ void display_pixel_frame(uint8_t brightness, uint8_t r, uint8_t g, uint8_t b) {
   SPI.transfer(r);
 }
 
-void display_pixel_24(uint8_t brightness, uint32_t color) {
-  uint8_t r = (uint8_t) ((color >> 16) & 0xFF);
-  uint8_t g = (uint8_t) ((color >> 8) & 0xFF);
-  uint8_t b = (uint8_t) (color & 0xFF);
-  display_pixel_frame(brightness, r, g, b);
+void display_pixel_24(uint8_t brightness, CRGB color) {
+  display_pixel_frame(brightness, color.r, color.g, color.b);
 }
 
 void displayRaySPI() {
@@ -138,12 +135,12 @@ void displayRaySPI() {
   return;
 }
 
-void displayRay() {
-  for(int i = 0; i < COL_HEIGHT; i++) {
-    setBothSides(i, rayToDisplay[i]);
-  }
-  strip.show();
-}
+// void displayRay() {
+//   for(int i = 0; i < COL_HEIGHT; i++) {
+//     setBothSides(i, rayToDisplay[i]);
+//   }
+//   strip.show();
+// }
 
 void display_ray_image() { // takes about 242 micros (370 now with non-32 transfers)
   calculate_ray(curAngle(), rayToDisplay); // takes about 30 micros (12% of time - 242)
