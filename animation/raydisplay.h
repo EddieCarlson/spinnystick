@@ -105,13 +105,11 @@ void calculate_current_ray(CRGB *ray) {
 }
 
 uint8_t brightness_byte = (0b11100000 | BRIGHTNESS);
-uint32_t brightness_only = (uint32_t) (brightness_byte << 24) & 0xFF000000;
+uint32_t brightness_only = (uint32_t) ((brightness_byte << 24) & 0xFF000000);
 
 void display_pixel_frame(uint8_t brightness, uint8_t r, uint8_t g, uint8_t b) {
-  SPI.transfer(brightness);
-  SPI.transfer(b);
-  SPI.transfer(g);
-  SPI.transfer(r);
+  uint32_t frame = brightness_only | ((uint32_t) (b << 16) & 0xFF0000) | ((uint32_t) ((g << 8) & 0xFF00)) | ((uint32_t) ((r & 0xFF)));
+  SPI.transfer32(frame);
 }
 
 void display_pixel_24(uint8_t brightness, CRGB color) {
