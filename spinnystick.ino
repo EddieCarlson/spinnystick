@@ -134,7 +134,7 @@ void setup() {
 
 void setToBlack() {
   for (int i = 0; i < NUMPIXELS; i++) {
-    strip.setPixelColor(i, 0, 0, 0);
+    strip.setPixelColor(i, 0, 0, 0);  
   }
   strip.show();
 }

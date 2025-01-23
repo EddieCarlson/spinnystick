@@ -6,35 +6,9 @@
 #include "../strip.h"
 #include <SPI.h>
 
-// TODO: not NUMPIXELS but COL_HEIGHT....here and everywhere...
-
-// class APAColor {
-//   public:
-
-//   uint8_t brightness;
-//   uint8_t r;
-//   uint8_t g;
-//   uint8_t b;
-
-//   APAColor(uint8_t _brightness, uint8_t _r, uint8_t _g, uint8_t _b) {
-//     _brightness = 0b11100000 | brightness;
-//     r = _r;
-//     g = _g;
-//     b = _b;
-//   }
-// };
-
-// class APAStripPayload {
-//   uint32_t start;
-//   APAColor *colors;
-//   uint32_t end;
-
-//   APAStripPayload(APAColors *_colors, )
-// }
-
 CRGB rays[NUM_RAYS][COL_HEIGHT];
 
-uint32_t rayFrames[COL_HEIGHT];
+CRGB rayFramesToDisplay[COL_HEIGHT];
 
 double rad_per_ray = 2.0 * PI / ((double) NUM_RAYS);
 
@@ -42,40 +16,17 @@ uint32_t rgb_to_hex(uint32_t r, uint32_t g, uint32_t b) {
   return ((r << 16) & 0xFF0000) | ((g << 8) & 0xFF00) | (b & 0xFF);
 }
 
-void setTestImage() {
-  for(int ray = 0; ray < 200; ray++) {
-    for(int px = 0; px < COL_HEIGHT; px++) {
-      rays[ray][px] = CRGB::Maroon;
-    }
-  }
-
-  for(int ray = 270; ray < 470; ray++) {
-    for(int px = 0; px < (COL_HEIGHT * 0.6); px++) {
-      rays[ray][px] = CRGB::DarkTurquoise;
-    }
-  }
-
-  for(int ray = 540; ray < 740; ray++) {
-    for(int px = 0; px < COL_HEIGHT; px++) {
-      rays[ray][px] = CRGB::Gold;
-    }
-  }
-
-  for(int ray = 810; ray < 1010; ray++) {
-    for(int px = 0; px < (COL_HEIGHT * 0.6); px++) {
-      rays[ray][px] = CRGB::DarkTurquoise;
-    }
-  }
-}
-
 int threshold = 255 + 255 + 255;
 double brightness_factor = 0.33; // 0 - 1. 0.35 already quite bright
-
 
 uint32_t brightness32 = 0xFF000000;
 
 inline uint32_t getFrame(uint8_t r, uint8_t g, uint8_t b) {
   return brightness32 | ((uint32_t) (b << 16) & 0xFF0000) | ((uint32_t) ((g << 8) & 0xFF00)) | ((uint32_t) ((r & 0xFF)));
+}
+
+inline uint32_t getFrame(CRGB color) {
+  return getFrame(color.r, color.g, color.b);
 }
 
 void calculate_ray(double cur_rad) {
@@ -102,7 +53,7 @@ void calculate_ray(double cur_rad) {
     uint8_t g = min(255, max(0, round(brightness_factor * blend_g)));
     uint8_t b = min(255, max(0, round(brightness_factor * blend_b)));
 
-    rayFrames[px] = getFrame(r, g, b);
+    rayFramesToDisplay[px] = CRGB(r, g, b);
   }
 }
 
@@ -110,43 +61,22 @@ void calculate_current_ray() {
   calculate_ray(curAngle());
 }
 
-uint8_t brightness_byte = (0b11100000 | BRIGHTNESS);
-uint32_t brightness_only = (uint32_t) ((brightness_byte << 24) & 0xFF000000);
-
-void display_pixel_frame(uint8_t brightness, uint8_t r, uint8_t g, uint8_t b) {
-  uint32_t frame = brightness_only | ((uint32_t) (b << 16) & 0xFF0000) | ((uint32_t) ((g << 8) & 0xFF00)) | ((uint32_t) ((r & 0xFF)));
-  SPI.transfer32(frame);
-}
-
-void display_pixel_24(uint8_t brightness, CRGB color) {
-  display_pixel_frame(brightness, color.r, color.g, color.b);
-}
-
 void displayRaySPI() {
   SPI.transfer32((uint32_t) 0);
   for(int i = 0; i < COL_HEIGHT; i++) {
-    // display_pixel_24(brightness_byte, rayFrames[i]);
-    SPI.transfer32(rayFrames[i]);
+    SPI.transfer32(getFrame(rayFramesToDisplay[i]));
   }
   for(int i = 0; i < 8; i++) {
-    SPI.transfer32(brightness_only);
+    SPI.transfer32(brightness32);
   }
   for(int i = COL_HEIGHT - 1; i >= 0; i--) {
-    SPI.transfer32(rayFrames[i]);
-    // display_pixel_24(brightness_byte, rayFrames[i]);
+    SPI.transfer32(getFrame(rayFramesToDisplay[i]));
   }
   for (uint16_t i = 0; i < (COL_HEIGHT + 14)/16; i++) {
     SPI.transfer(0);
   }
   return;
 }
-
-// void displayRay() {
-//   for(int i = 0; i < COL_HEIGHT; i++) {
-//     setBothSides(i, rayToDisplay[i]);
-//   }
-//   strip.show();
-// }
 
 void display_ray_image() { // takes about 290 micros (@ 32MHz)
   calculate_ray(curAngle()); // takes about 30 micros (12% of time - 242)
