@@ -34,7 +34,7 @@
 
 CRGB rays[NUM_RAYS][COL_HEIGHT];
 
-CRGB rayToDisplay[COL_HEIGHT];
+uint32_t rayFrames[COL_HEIGHT];
 
 double rad_per_ray = 2.0 * PI / ((double) NUM_RAYS);
 
@@ -71,7 +71,14 @@ void setTestImage() {
 int threshold = 255 + 255 + 255;
 double brightness_factor = 0.33; // 0 - 1. 0.35 already quite bright
 
-void calculate_ray(double cur_rad, CRGB *ray) {
+
+uint32_t brightness32 = 0xFF000000;
+
+inline uint32_t getFrame(uint8_t r, uint8_t g, uint8_t b) {
+  return brightness32 | ((uint32_t) (b << 16) & 0xFF0000) | ((uint32_t) ((g << 8) & 0xFF00)) | ((uint32_t) ((r & 0xFF)));
+}
+
+void calculate_ray(double cur_rad) {
   double cur_ray = fmod(((double) NUM_RAYS) * cur_rad / (2 * PI), NUM_RAYS);
   int under_ray_idx = floor(cur_ray);
   int over_ray_idx = (under_ray_idx + 1) % NUM_RAYS;
@@ -95,18 +102,17 @@ void calculate_ray(double cur_rad, CRGB *ray) {
     uint8_t g = min(255, max(0, round(brightness_factor * blend_g)));
     uint8_t b = min(255, max(0, round(brightness_factor * blend_b)));
 
-    rayToDisplay[px] = CRGB(r, g, b);
+    rayFrames[px] = getFrame(r, g, b);
   }
 }
 
-void calculate_current_ray(CRGB *ray) {
-  calculate_ray(curAngle(), ray);
+void calculate_current_ray() {
+  calculate_ray(curAngle());
 }
 
 uint8_t brightness_byte = (0b11100000 | BRIGHTNESS);
 uint32_t brightness_only = (uint32_t) ((brightness_byte << 24) & 0xFF000000);
 
-// TODO: avoid non-31 brightness (flickering)
 void display_pixel_frame(uint8_t brightness, uint8_t r, uint8_t g, uint8_t b) {
   uint32_t frame = brightness_only | ((uint32_t) (b << 16) & 0xFF0000) | ((uint32_t) ((g << 8) & 0xFF00)) | ((uint32_t) ((r & 0xFF)));
   SPI.transfer32(frame);
@@ -119,13 +125,15 @@ void display_pixel_24(uint8_t brightness, CRGB color) {
 void displayRaySPI() {
   SPI.transfer32((uint32_t) 0);
   for(int i = 0; i < COL_HEIGHT; i++) {
-    display_pixel_24(brightness_byte, rayToDisplay[i]);
+    // display_pixel_24(brightness_byte, rayFrames[i]);
+    SPI.transfer32(rayFrames[i]);
   }
   for(int i = 0; i < 8; i++) {
     SPI.transfer32(brightness_only);
   }
   for(int i = COL_HEIGHT - 1; i >= 0; i--) {
-    display_pixel_24(brightness_byte, rayToDisplay[i]);
+    SPI.transfer32(rayFrames[i]);
+    // display_pixel_24(brightness_byte, rayFrames[i]);
   }
   for (uint16_t i = 0; i < (COL_HEIGHT + 14)/16; i++) {
     SPI.transfer(0);
@@ -141,6 +149,6 @@ void displayRaySPI() {
 // }
 
 void display_ray_image() { // takes about 290 micros (@ 32MHz)
-  calculate_ray(curAngle(), rayToDisplay); // takes about 30 micros (12% of time - 242)
+  calculate_ray(curAngle()); // takes about 30 micros (12% of time - 242)
   displayRaySPI();
 }
