@@ -94,7 +94,7 @@ String readFileFromSerial() {
 }
 
 const bool readSerial = false;
-const String defaultSDImageFilename = "eddie_mandala5.txt";
+const String defaultSDImageFilename = "eddie_mandala3.txt";
 
 void waitForSerial() {
   uint32_t start = millis();

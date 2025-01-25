@@ -17,9 +17,9 @@ uint32_t rgb_to_hex(uint32_t r, uint32_t g, uint32_t b) {
 }
 
 int threshold = 255 + 255 + 255;
-double brightness_factor = 0.33; // 0 - 1. 0.35 already quite bright
+double brightness_factor = 0.07; // 0 - 1
 
-uint32_t brightness32 = 0xFF000000;
+uint32_t brightness32 = 0xFB000000;
 
 inline uint32_t getFrame(uint8_t r, uint8_t g, uint8_t b) {
   return brightness32 | ((uint32_t) (b << 16) & 0xFF0000) | ((uint32_t) ((g << 8) & 0xFF00)) | ((uint32_t) ((r & 0xFF)));
