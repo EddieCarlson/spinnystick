@@ -1,3 +1,5 @@
+#pragma once
+
 #include "../angle.h"
 #include <Adafruit_DotStar.h>
 #include <FastLED.h>
