@@ -17,11 +17,15 @@
 const bool readSerial = false;
 const String defaultSDImageFilename = "eddie_mandala3.txt";
 
-const uint8_t interruptpin = 41;
+const uint8_t interruptPin = 39;
 
 void waitForSerial() {
   uint32_t start = millis();
   while(!Serial && (millis() - start < 2000)) { ; }
+}
+
+void hi() {
+  Serial.println("hi");
 }
 
 void setup() {
@@ -33,14 +37,15 @@ void setup() {
     return;
   } else {
     Serial.println("SD card init successful");
-    String filename = defaultSDImageFilename;
-    if (readSerial) {
-      filename = readFileFromSerial();
-    }
-    importImageFromSD(filename);
+    // String filename = defaultSDImageFilename;
+    // if (readSerial) {
+    //   filename = readFileFromSerial();
+    // }
+    // importImageFromSD(filename);
   }
 
-  listAnimations();
+  // Serial.println(selectImageNameByIndex());
+  // listAnimations();
 
   SPI.begin();
   SPI.setMOSI(DATAPIN);
@@ -52,7 +57,11 @@ void setup() {
 
   Serial.println("hi");
 
-  // attachInterrupt(digitalPinToInterrupt(interruptPin), blink, CHANGE); // FALLING?
+  pinMode(interruptPin, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(interruptPin), importNextImage, FALLING);
+  interrupts();
+
+  importNextImage();
 
   // initIMU(IMU, IMU_ADDRESS);
 }

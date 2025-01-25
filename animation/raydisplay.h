@@ -17,7 +17,7 @@ uint32_t rgb_to_hex(uint32_t r, uint32_t g, uint32_t b) {
 }
 
 int threshold = 255 + 255 + 255;
-double brightness_factor = 0.07; // 0 - 1
+double brightness_factor = 0.05; // 0 - 1
 
 uint32_t brightness32 = 0xFB000000;
 

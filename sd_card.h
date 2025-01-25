@@ -8,18 +8,27 @@
 volatile bool changeAnimations = false;
 int animationIndex = 0;
 
-void listAnimations() {
+String selectImageNameByIndex() {
   File root = SD.open("/");
-  File f = root.openNextFile();
-  Serial.println(f.name());
-  for(int i = 0; i < animationIndex; i++) {
-    f.close();
+  File f = File();
+  String name;
+  int animationCount = -1;
+  while(animationCount < animationIndex) {
+    if (f) { f.close(); }
+
     f = root.openNextFile();
-    Serial.println(f.name());
-    if (!f) {
-      break;
+    if (!f) { // no files remaining - cycle back to first file
+      animationIndex = 0;
+      return selectImageNameByIndex();
+    }
+    name = String(f.name());
+    if (name.endsWith(".txt")) { // currently counting all root level .txt files as images
+      animationCount++;
     }
   }
+  if (f) { f.close(); }
+  root.close();
+  return name;
 }
 
 uint8_t charToHex(char hexChar) {
@@ -30,8 +39,8 @@ uint8_t charToHex(char hexChar) {
   } else if (hexChar >= 'a' && hexChar <= 'f') {
       return hexChar - 'a' + 10;
   } else {
-    Serial.print("bad hex-char conversion from: ");
-    Serial.println(hexChar);
+    // Serial.print("bad hex-char conversion from: ");
+    // Serial.println(hexChar);
     return 0;
   }
 }
@@ -99,4 +108,12 @@ String readFileFromSerial() {
   myFile.close();
   delay(20);
   return title;
+}
+
+void importNextImage() {
+  Serial.println("import next image: ");
+  String nextImage = selectImageNameByIndex();
+  Serial.println(nextImage);
+  importImageFromSD(nextImage);
+  animationIndex++;
 }
