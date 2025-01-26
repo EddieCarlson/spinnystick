@@ -19,7 +19,8 @@ uint32_t rgb_to_hex(uint32_t r, uint32_t g, uint32_t b) {
 int threshold = 255 + 255 + 255;
 double brightness_factor = 0.05; // 0 - 1
 
-uint32_t brightness32 = 0xFB000000;
+// TODO: raise this to FF if possible
+uint32_t brightness32 = 0xE8000000;
 
 inline uint32_t getFrame(uint8_t r, uint8_t g, uint8_t b) {
   return brightness32 | ((uint32_t) (b << 16) & 0xFF0000) | ((uint32_t) ((g << 8) & 0xFF00)) | ((uint32_t) ((r & 0xFF)));
@@ -72,8 +73,8 @@ void displayRaySPI() {
   for(int i = COL_HEIGHT - 1; i >= 0; i--) {
     SPI.transfer32(getFrame(rayFramesToDisplay[i]));
   }
-  for (uint16_t i = 0; i < (COL_HEIGHT + 14)/16; i++) {
-    SPI.transfer(0);
+  for (uint16_t i = 0; i < (NUMPIXELS + 14)/64; i++) {
+    SPI.transfer32(0);
   }
   return;
 }

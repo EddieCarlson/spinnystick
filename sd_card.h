@@ -46,6 +46,9 @@ uint8_t charToHex(char hexChar) {
 }
 
 void importImageFromSD(String name) {
+  Serial.print("importing image: ");
+  Serial.println(name);
+
   File myFile = SD.open(name.c_str());
   int ray = 0;
   int px = 0;
@@ -111,9 +114,6 @@ String readFileFromSerial() {
 }
 
 void importNextImage() {
-  Serial.println("import next image: ");
-  String nextImage = selectImageNameByIndex();
-  Serial.println(nextImage);
-  importImageFromSD(nextImage);
+  importImageFromSD(selectImageNameByIndex());
   animationIndex++;
 }

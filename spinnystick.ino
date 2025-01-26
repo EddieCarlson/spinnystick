@@ -66,7 +66,9 @@ void setup() {
   // initIMU(IMU, IMU_ADDRESS);
 }
 
-
+void setNextImageBool() {
+  changeAnimations = true;
+}
 
 void setToBlack() {
   for (int i = 0; i < NUMPIXELS; i++) {
@@ -93,6 +95,10 @@ unsigned long lastLoopPrint = micros();
 
 void loop() {
   unsigned long start = micros();
+  if (changeAnimations) {
+    importNextImage();
+    changeAnimations = false;
+  }
   display_ray_image();
   unsigned long duration2 = micros() - start;
   if (micros() - lastLoopPrint > 2000000) {
