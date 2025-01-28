@@ -161,3 +161,7 @@ void initSD(bool readSerial) {
 
   listAllImages();
 }
+
+void setNextImageBool() {
+  changeImage = true;
+}

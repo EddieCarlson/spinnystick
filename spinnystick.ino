@@ -16,10 +16,6 @@
 
 const bool readSerial = false;
 
-void setNextImageBool() {
-  changeImage = true;
-}
-
 void initButtons() {
   pinMode(interruptPin, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(interruptPin), setNextImageBool, FALLING);

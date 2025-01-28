@@ -62,7 +62,6 @@ bool setPixels(int px, uint8_t r, uint8_t g, uint8_t b) {
   bool settable = px >= 0 && px < COL_HEIGHT;
   if (settable) {
     pixels[px] = CRGB(r, g, b);
-    pixels[200 - px] = pixels[px];
   }
   return settable;
 }
