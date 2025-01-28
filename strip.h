@@ -4,8 +4,8 @@
 #include "common.h"
 #include <FastLED.h>
 
-#define DATAPIN    11
-#define CLOCKPIN   13
+#define DATAPIN    26
+#define CLOCKPIN   27
 #define BRIGHTNESS 31 // 0 to 31
 
 Adafruit_DotStar strip(NUMPIXELS, DATAPIN, CLOCKPIN, DOTSTAR_BGR);

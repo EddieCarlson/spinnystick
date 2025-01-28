@@ -63,18 +63,18 @@ void calculate_current_ray() {
 }
 
 void displayRaySPI() {
-  SPI.transfer32((uint32_t) 0);
+  SPI1.transfer32((uint32_t) 0);
   for(int i = 0; i < COL_HEIGHT; i++) {
-    SPI.transfer32(getFrame(rayFramesToDisplay[i]));
+    SPI1.transfer32(getFrame(rayFramesToDisplay[i]));
   }
   for(int i = 0; i < 8; i++) {
-    SPI.transfer32(brightness32);
+    SPI1.transfer32(brightness32);
   }
   for(int i = COL_HEIGHT - 1; i >= 0; i--) {
-    SPI.transfer32(getFrame(rayFramesToDisplay[i]));
+    SPI1.transfer32(getFrame(rayFramesToDisplay[i]));
   }
   for (uint16_t i = 0; i < (NUMPIXELS + 14)/64; i++) {
-    SPI.transfer32(0);
+    SPI1.transfer32(0);
   }
   return;
 }

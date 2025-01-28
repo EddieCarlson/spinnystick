@@ -5,30 +5,55 @@
 #include "common.h"
 #include "animation/raydisplay.h"
 
-volatile bool changeAnimations = false;
-int animationIndex = 0;
+volatile bool changeImage = false;
+int imageIndex = 0;
 
-String selectImageNameByIndex() {
+String selectImageNameByIndex(bool printNames) {
   File root = SD.open("/");
+  root.rewindDirectory();
   File f = File();
   String name;
-  int animationCount = -1;
-  while(animationCount < animationIndex) {
-    if (f) { f.close(); }
+  int imageCount = -1;
+  while(imageCount < imageIndex) {
+    if (f) {
+      f.close();
+      delay(20);
+    }
 
     f = root.openNextFile();
     if (!f) { // no files remaining - cycle back to first file
-      animationIndex = 0;
-      return selectImageNameByIndex();
+      imageIndex = 0;
+      root.close();
+      delay(50);
+      return selectImageNameByIndex(false);
     }
     name = String(f.name());
     if (name.endsWith(".txt")) { // currently counting all root level .txt files as images
-      animationCount++;
+      if (printNames) {
+        Serial.println(name);
+      }
+      imageCount++;
     }
   }
-  if (f) { f.close(); }
+  if (f) {
+    f.close();
+    delay(20);
+  }
   root.close();
+  delay(50);
   return name;
+}
+
+String selectImageNameByIndex() {
+  return selectImageNameByIndex(false);
+}
+
+void listAllImages() {
+  int curImageIndex = imageIndex;
+  imageIndex = 200;
+  Serial.println("images: ");
+  selectImageNameByIndex(true);
+  imageIndex = curImageIndex;
 }
 
 uint8_t charToHex(char hexChar) {
@@ -115,5 +140,5 @@ String readFileFromSerial() {
 
 void importNextImage() {
   importImageFromSD(selectImageNameByIndex());
-  animationIndex++;
+  imageIndex++;
 }

@@ -17,7 +17,7 @@
 const bool readSerial = false;
 const String defaultSDImageFilename = "eddie_mandala3.txt";
 
-const uint8_t interruptPin = 39;
+const uint8_t interruptPin = 40;
 
 void waitForSerial() {
   uint32_t start = millis();
@@ -31,73 +31,48 @@ void hi() {
 void setup() {
   Serial.begin(9600);
   waitForSerial();
+  Serial.println("hi");
 
   if (!SD.begin(BUILTIN_SDCARD)) {
     Serial.println("SD card initialization failed!");
     return;
   } else {
     Serial.println("SD card init successful");
-    // String filename = defaultSDImageFilename;
-    // if (readSerial) {
-    //   filename = readFileFromSerial();
-    // }
-    // importImageFromSD(filename);
+    if (readSerial) {
+      String filename = readFileFromSerial();
+      importImageFromSD(filename);
+    } else {
+      importNextImage();
+    }
   }
 
-  // Serial.println(selectImageNameByIndex());
-  // listAnimations();
+  delay(1000);
 
-  SPI.begin();
-  SPI.setMOSI(DATAPIN);
-  SPI.setSCK(CLOCKPIN);
-  SPI.beginTransaction(SPISettings(32000000, MSBFIRST, SPI_MODE0));
-  SPI.setMOSI(DATAPIN);
-  SPI.setSCK(CLOCKPIN);
-  Serial.println("spi began");
+  listAllImages();
 
-  Serial.println("hi");
+  SPI1.begin();
+  SPI1.setMOSI(DATAPIN);
+  SPI1.setSCK(CLOCKPIN);
+  SPI1.beginTransaction(SPISettings(32000000, MSBFIRST, SPI_MODE0));
 
   pinMode(interruptPin, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(interruptPin), importNextImage, FALLING);
+  attachInterrupt(digitalPinToInterrupt(interruptPin), setNextImageBool, FALLING);
   interrupts();
-
-  importNextImage();
 
   // initIMU(IMU, IMU_ADDRESS);
 }
 
 void setNextImageBool() {
-  changeAnimations = true;
-}
-
-void setToBlack() {
-  for (int i = 0; i < NUMPIXELS; i++) {
-    strip.setPixelColor(i, 0, 0, 0);  
-  }
-  strip.show();
-}
-
-float dist(float x1, float y1, float x2, float y2) {
-  return pow(x2 - x1, 2) + pow(y2 - y1, 2);
-}
-
-
-// for testing min time to push data over SPI
-void setColorRayNothing(double angle) {
-  for(int height = 0; height < COL_HEIGHT; height++) {
-    strip.setPixelColor(height, 0, 1, 20);
-    strip.setPixelColor(200 - height, 20, 11, 1);
-  }
-  strip.show();
+  changeImage = true;
 }
 
 unsigned long lastLoopPrint = micros();
 
 void loop() {
   unsigned long start = micros();
-  if (changeAnimations) {
+  if (changeImage) {
     importNextImage();
-    changeAnimations = false;
+    changeImage = false;
   }
   display_ray_image();
   unsigned long duration2 = micros() - start;
