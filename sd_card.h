@@ -100,7 +100,7 @@ void importImageFromSD(String name) {
       uint8_t g = min(255, charToHex(gi) * 16);
       uint8_t b = min(255, charToHex(bi) * 16);
 
-      rays[ray][px] = CRGB(r, g, b);
+      imageRays[ray][px] = CRGB(r, g, b);
 
       px++;
     }
@@ -116,8 +116,8 @@ String readFileFromSerial() {
     if (millis() - startMillis < 300000) {
       delay(1000);
     } else {
-      Serial.println("serial input received");
-      return;
+      Serial.println("did not receive serial input after 5 minutes");
+      return "failure";
     }
   }
   String title = Serial.readStringUntil('|', 200);
@@ -141,4 +141,23 @@ String readFileFromSerial() {
 void importNextImage() {
   importImageFromSD(selectImageNameByIndex());
   imageIndex++;
+}
+
+void initSD(bool readSerial) {
+  if (!SD.begin(BUILTIN_SDCARD)) {
+    Serial.println("SD card initialization failed!");
+    return;
+  } else {
+    Serial.println("SD card init successful");
+    if (readSerial) {
+      String filename = readFileFromSerial();
+      importImageFromSD(filename);
+    } else {
+      importNextImage();
+    }
+  }
+
+  delay(100);
+
+  listAllImages();
 }

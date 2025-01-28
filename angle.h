@@ -4,7 +4,8 @@
 #include "common.h"
 #include "imu_init.h"
 
-double micros_per_rotation = 360000.0;
+ // refreshes per rotation = micros_per_rotation / micros_per_refresh. 300 millis / 300 micros = 1000
+double micros_per_rotation = 300000.0;
 unsigned long lastMicros = micros();
 unsigned long lastGyroMicros = micros();
 double lastAngle = 0;

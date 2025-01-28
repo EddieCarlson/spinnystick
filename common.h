@@ -1,10 +1,13 @@
 #pragma once
 #include <math.h>
+#include <FastLED.h>
 
 #define NUMPIXELS 200
 #define COL_HEIGHT 96
 #define ROPE_PIXELS 25
 #define NUM_RAYS 1080
+
+const uint8_t interruptPin = 40;
 
 const int image_size = (ROPE_PIXELS + COL_HEIGHT) * 2;
 

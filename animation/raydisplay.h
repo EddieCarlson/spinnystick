@@ -6,37 +6,19 @@
 #include "../strip.h"
 #include <SPI.h>
 
-CRGB rays[NUM_RAYS][COL_HEIGHT];
-
-CRGB rayFramesToDisplay[COL_HEIGHT];
+CRGB imageRays[NUM_RAYS][COL_HEIGHT];
 
 double rad_per_ray = 2.0 * PI / ((double) NUM_RAYS);
 
-uint32_t rgb_to_hex(uint32_t r, uint32_t g, uint32_t b) {
-  return ((r << 16) & 0xFF0000) | ((g << 8) & 0xFF00) | (b & 0xFF);
-}
-
 int threshold = 255 + 255 + 255;
-double brightness_factor = 0.05; // 0 - 1
 
-// TODO: raise this to FF if possible
-uint32_t brightness32 = 0xE8000000;
-
-inline uint32_t getFrame(uint8_t r, uint8_t g, uint8_t b) {
-  return brightness32 | ((uint32_t) (b << 16) & 0xFF0000) | ((uint32_t) ((g << 8) & 0xFF00)) | ((uint32_t) ((r & 0xFF)));
-}
-
-inline uint32_t getFrame(CRGB color) {
-  return getFrame(color.r, color.g, color.b);
-}
-
-void calculate_ray(double cur_rad) {
+void calculateRay(double cur_rad) {
   double cur_ray = fmod(((double) NUM_RAYS) * cur_rad / (2 * PI), NUM_RAYS);
   int under_ray_idx = floor(cur_ray);
   int over_ray_idx = (under_ray_idx + 1) % NUM_RAYS;
   
-  CRGB *under_ray = rays[under_ray_idx];
-  CRGB *over_ray = rays[over_ray_idx];
+  CRGB *under_ray = imageRays[under_ray_idx];
+  CRGB *over_ray = imageRays[over_ray_idx];
 
   double dist_to_under = cur_ray - under_ray_idx;
   double to_under_score = pow(dist_to_under, 2);
@@ -54,32 +36,15 @@ void calculate_ray(double cur_rad) {
     uint8_t g = min(255, max(0, round(brightness_factor * blend_g)));
     uint8_t b = min(255, max(0, round(brightness_factor * blend_b)));
 
-    rayFramesToDisplay[px] = CRGB(r, g, b);
+    pixels[px] = CRGB(r, g, b);
   }
 }
 
 void calculate_current_ray() {
-  calculate_ray(curAngle());
+  calculateRay(curAngle());
 }
 
-void displayRaySPI() {
-  SPI1.transfer32((uint32_t) 0);
-  for(int i = 0; i < COL_HEIGHT; i++) {
-    SPI1.transfer32(getFrame(rayFramesToDisplay[i]));
-  }
-  for(int i = 0; i < 8; i++) {
-    SPI1.transfer32(brightness32);
-  }
-  for(int i = COL_HEIGHT - 1; i >= 0; i--) {
-    SPI1.transfer32(getFrame(rayFramesToDisplay[i]));
-  }
-  for (uint16_t i = 0; i < (NUMPIXELS + 14)/64; i++) {
-    SPI1.transfer32(0);
-  }
-  return;
-}
-
-void display_ray_image() { // takes about 290 micros (@ 32MHz)
-  calculate_ray(curAngle()); // takes about 30 micros (12% of time - 242)
-  displayRaySPI();
+void displayCurImageRay() { // takes about 290 micros (@ 32MHz)
+  calculateRay(curAngle()); // takes about 30 micros (12% of time - 242)
+  displayPixels();
 }

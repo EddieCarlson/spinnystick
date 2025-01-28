@@ -36,17 +36,14 @@ void displayAtR(double rf) {
         double factor = 1 - pow((abs(px - r) / 3.2), 1.5);
         uint8_t r = ((uint8_t) (127.0 * factor));
         uint8_t b = ((uint8_t) (255.0 * factor));
-        strip.setPixelColor(px, r, 0, b);
-        if (201 - px < 200) {
-          strip.setPixelColor(201-px, r, 0, b);
-        }
+        setPixels(px, r, 0, b);
       }
     }
   }
 }
 
 void displayCardioids(Cardioid *cardioids, int num) {
-  strip.clear();
+  clearPixels();
   double angle = curAngle();
   for(int i = 0; i < num; i++) {
     double rf = radius_at_theta(cardioids[i], angle);
@@ -54,7 +51,7 @@ void displayCardioids(Cardioid *cardioids, int num) {
     displayAtR(rf);
     displayAtR(rf2);
   }
-  strip.show();
+  displayPixels();
 }
 
 void displayCardioids() {
