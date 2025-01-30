@@ -13,6 +13,10 @@ int updates = 0;
 double checkGyroIntervalMicros = 25000.0;
 bool useGyro = true;
 
+double rayToRad(int ray) {
+  return (((double) ray) * 2.0 * M_PI) / ((double) NUM_RAYS);
+}
+
 double curAngle() { 
   unsigned long curMicros = micros();
   unsigned long diff = curMicros - lastMicros;

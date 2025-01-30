@@ -8,10 +8,10 @@
 #define CLOCKPIN   27
 #define BRIGHTNESS 31 // 0 to 31
 
-const double brightness_factor = 0.06; // 0 - 1
+const double brightness_factor = 0.05; // 0 - 1
 
 // TODO: raise this to FF if possible
-const uint32_t brightness32 = 0xFF000000;
+const uint32_t brightness32 = 0xF5000000;
 
 CRGB pixels[COL_HEIGHT];
 

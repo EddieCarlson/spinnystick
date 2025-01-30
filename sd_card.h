@@ -109,9 +109,7 @@ void importImageFromSD(String name) {
 }
 
 String readFileFromSerial() {
-  delay(1000);
   uint32_t startMillis = millis();
-  Serial.println("waiting for serial input");
   while(!Serial.available()) {
     if (millis() - startMillis < 300000) {
       delay(1000);

@@ -13,8 +13,9 @@
 #include <ctype.h>
 
 #include "sd_card.h"
+#include "animation/shapes.h"
 
-const bool readSerial = false;
+const bool readSerial = true;
 
 void initButtons() {
   pinMode(interruptPin, INPUT_PULLUP);
@@ -29,6 +30,7 @@ void setup() {
   Serial.println("hi");
 
   initSD(readSerial);
+  // addSquares();
   initSPI();
   initButtons();
   // initIMU(IMU, IMU_ADDRESS);
