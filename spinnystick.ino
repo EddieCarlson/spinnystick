@@ -15,7 +15,7 @@
 #include "sd_card.h"
 #include "animation/shapes.h"
 
-const bool readSerial = true;
+const bool readSerial = false;
 
 void initButtons() {
   pinMode(interruptPin, INPUT_PULLUP);

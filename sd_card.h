@@ -151,7 +151,8 @@ void initSD(bool readSerial) {
       String filename = readFileFromSerial();
       importImageFromSD(filename);
     } else {
-      importNextImage();
+      // importNextImage();
+      importImageFromSD("IMG_3703.txt");
     }
   }
 
