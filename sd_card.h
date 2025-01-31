@@ -9,8 +9,8 @@ volatile bool changeImage = false;
 int imageIndex = 0;
 
 String selectImageNameByIndex(bool printNames) {
-  File root = SD.open("/");
-  root.rewindDirectory();
+  File imagesRoot = SD.open("/images");
+  imagesRoot.rewindDirectory();
   File f = File();
   String name;
   int imageCount = -1;
@@ -20,10 +20,10 @@ String selectImageNameByIndex(bool printNames) {
       delay(20);
     }
 
-    f = root.openNextFile();
+    f = imagesRoot.openNextFile();
     if (!f) { // no files remaining - cycle back to first file
       imageIndex = 0;
-      root.close();
+      imagesRoot.close();
       delay(50);
       return selectImageNameByIndex(false);
     }
@@ -39,9 +39,9 @@ String selectImageNameByIndex(bool printNames) {
     f.close();
     delay(20);
   }
-  root.close();
+  imagesRoot.close();
   delay(50);
-  return name;
+  return "images/" + name;
 }
 
 String selectImageNameByIndex() {
@@ -92,13 +92,16 @@ void importImageFromSD(String name) {
       break;
 
       default:
-      int ri = myFile.read(); 
-      int gi = myFile.read(); 
-      int bi = myFile.read(); 
+      int ri1 = myFile.read(); 
+      int ri2 = myFile.read(); 
+      int gi1 = myFile.read(); 
+      int gi2 = myFile.read(); 
+      int bi1 = myFile.read(); 
+      int bi2 = myFile.read(); 
 
-      uint8_t r = min(255, charToHex(ri) * 16);
-      uint8_t g = min(255, charToHex(gi) * 16);
-      uint8_t b = min(255, charToHex(bi) * 16);
+      uint8_t r = min(255, ((charToHex(ri1) << 4) & 0xF0) | charToHex(ri2));
+      uint8_t g = min(255, ((charToHex(gi1) << 4) & 0xF0) | charToHex(gi2));
+      uint8_t b = min(255, ((charToHex(bi1) << 4) & 0xF0) | charToHex(bi2));
 
       imageRays[ray][px] = CRGB(r, g, b);
 
@@ -118,7 +121,7 @@ String readFileFromSerial() {
       return "failure";
     }
   }
-  String title = Serial.readStringUntil('|', 200);
+  String title = "images/" + Serial.readStringUntil('|', 200);
   File myFile = SD.open(title.c_str(), FILE_WRITE);
   while(true) {
     myFile.write(Serial.read());
@@ -152,7 +155,7 @@ void initSD(bool readSerial) {
       importImageFromSD(filename);
     } else {
       // importNextImage();
-      importImageFromSD("IMG_3703.txt");
+      importImageFromSD("images/zhara_shrooms.txt");
     }
   }
 

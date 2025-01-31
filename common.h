@@ -3,9 +3,9 @@
 #include <FastLED.h>
 
 #define NUMPIXELS 200
-#define COL_HEIGHT 96
+#define COL_HEIGHT 97
 #define ROPE_PIXELS 25
-#define NUM_RAYS 1080
+#define NUM_RAYS 1440
 
 const uint8_t interruptPin = 40;
 

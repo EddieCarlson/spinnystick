@@ -8,6 +8,11 @@ import sys
 # run via: `python convert_image.py <image_filepath> > hex_values`
 # outputs one 12-bit rgb hex value per pixel, one ray of pixels per line
 input_filename = sys.argv[1]
+include_filename_header_str = sys.argv[2]
+include_filename_header = False
+if (include_filename_header_str == 'include_header'):
+  include_filename_header = True
+
 image_in = Image.open(input_filename)
 
 def crop_center(pil_img, crop_width, crop_height):
@@ -35,8 +40,8 @@ g_channel = [[g for _, g, _ in row] for row in rgb_img]
 b_channel = [[b for _, _, b in row] for row in rgb_img]
 
 
-num_rays = 360 * 3 # 1/3 degrees between each ray
-num_pixels = 96
+num_rays = 360 * 4 # 1/3 degrees between each ray
+num_pixels = 97
 rope_pixels = 25 # number of pixels that would fit between pixel 0 on the rod and the center of spinning
 center_px = num_pixels + rope_pixels
 scale_factor = square_image.size[0] / (center_px * 2.0)
@@ -46,7 +51,6 @@ rads_per_ray = 2 * math.pi / num_rays
 # [1080 by 96 by 3] 4-bit ints
 rays = [] # store each ray as a list of `num_pixels` 12-bit rgb elements
 coordinates = [[], []] # unzipped x,y pairs
-
 
 for ray in range(0, num_rays):
   ray_pixels = []
@@ -63,14 +67,15 @@ green_pixels = get_pixel_values(g_channel, coordinates)
 blue_pixels = get_pixel_values(b_channel, coordinates)
 
 rgb_pixels = list(zip(red_pixels, green_pixels, blue_pixels))
+rgb_pixels_24bit = ["".join([format(v, '02x') for v in [r, g, b]]) for [r, g, b] in rgb_pixels]
 
-
-# div pixel values by 16 to convert to 12-bit color
-rgb_pixels_12bit = ["".join([format(v, 'x') for v in [r // 16, g // 16, b // 16]]) for [r, g, b] in rgb_pixels]
-
-
-ray_pixels_pipe_list = "|".join([",".join(rgb_pixels_12bit[(ray * num_pixels):((ray + 1) * num_pixels)]) for ray in range(0, num_rays)])
+ray_pixels_pipe_list = "|".join([",".join(rgb_pixels_24bit[(ray * num_pixels):((ray + 1) * num_pixels)]) for ray in range(0, num_rays)])
 
 output_filename = input_filename.split(".")[0] + ".txt"
 
-print(output_filename + "|" + ray_pixels_pipe_list + "|")
+output = ray_pixels_pipe_list + "|"
+
+if(include_filename_header):
+   output = output_filename + "|" + output
+
+print(output)

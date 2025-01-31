@@ -8,10 +8,10 @@
 #define CLOCKPIN   27
 #define BRIGHTNESS 31 // 0 to 31
 
-const double brightness_factor = 0.05; // 0 - 1
+const double brightness_factor = 0.08; // 0 - 1
 
 // TODO: raise this to FF if possible
-const uint32_t brightness32 = 0xF5000000;
+const uint32_t brightness32 = 0xFF000000;
 
 CRGB pixels[COL_HEIGHT];
 
@@ -34,7 +34,7 @@ void displayPixels() {
   for(int i = 0; i < COL_HEIGHT; i++) {
     SPI1.transfer32(getFrame(pixels[i]));
   }
-  for(int i = 0; i < 8; i++) {
+  for(int i = 0; i < NUMPIXELS - (COL_HEIGHT * 2); i++) {
     SPI1.transfer32(brightness32);
   }
   for(int i = COL_HEIGHT - 1; i >= 0; i--) {
