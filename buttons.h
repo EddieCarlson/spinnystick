@@ -11,7 +11,7 @@ const uint8_t prevImagePin = 14;
 const uint8_t brightnessPin = 15;
 const uint8_t periodPin = 16;
 
-Bounce2::Button nextImageNextButton = Bounce2::Button();
+Bounce2::Button nextImageNewButton = Bounce2::Button();
 Bounce2::Button prevImageButton = Bounce2::Button();
 Bounce2::Button brightnessButton = Bounce2::Button();
 Bounce2::Button periodButton = Bounce2::Button();
@@ -49,25 +49,32 @@ class ButtonAction {
     }
 };
 
-ButtonAction buttonActions[2] = {
-  ButtonAction(nextImageNextButton, nextImagePinNext, importNextImage),
-  ButtonAction(prevImageButton, prevImagePin, importPrevImage)
+ButtonAction buttonActions[4] = {
+  ButtonAction(nextImageNewButton, nextImagePinNext, importNextImage),
+  ButtonAction(prevImageButton, prevImagePin, importPrevImage),
+  ButtonAction(brightnessButton, nextImagePinNext, setNextBrightness),
+  ButtonAction(periodButton, prevImagePin, setNextPeriod)
 };
-  // prevImageButton, brightnessButton, periodButton};
 
 void initButtonsNext() {
-  for(int i = 0; i < 2; i++) {
+  for(int i = 0; i < 4; i++) {
     buttonActions[i].init();
   }
 }
 
 void checkButtonsNext() {
-  for(int i = 0; i < 2; i++) {
+  for(int i = 0; i < 4; i++) {
+    buttonActions[i].update();
+  }
+  for(int i = 0; i < 4; i++) {
     if (buttonActions[i].actIfPressed()) {
-      for(int u = i; u < 2; u++) {
-        buttonActions[u].button.setPressedState(false);
-      }
       break;
     }
+  }
+}
+
+void initButtonsNew() {
+  for(int i = 0; i < 4; i++) {
+    buttonActions[i].init();
   }
 }
