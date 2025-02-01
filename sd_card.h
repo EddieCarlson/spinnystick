@@ -28,7 +28,7 @@ String selectImageNameByIndex(bool printNames) {
       return selectImageNameByIndex(false);
     }
     name = String(f.name());
-    if (name.endsWith(".txt")) { // currently counting all root level .txt files as images
+    if (name.endsWith(".rayb")) {
       if (printNames) {
         Serial.println(name);
       }
@@ -40,7 +40,7 @@ String selectImageNameByIndex(bool printNames) {
     delay(20);
   }
   imagesRoot.close();
-  delay(50);
+  delay(20);
   return "images/" + name;
 }
 
@@ -70,7 +70,6 @@ uint8_t charToHex(char hexChar) {
   }
 }
 
-//TODO: can i just write bytes to the file and read them in as ints? read 24 bits at a time and create the CRGB from it?
 void importImageFromSD(String name) {
   Serial.print("importing image: ");
   Serial.println(name);
@@ -78,38 +77,18 @@ void importImageFromSD(String name) {
   File myFile = SD.open(name.c_str());
   int ray = 0;
   int px = 0;
-  while (myFile.available()) {
-    if (ray >= NUM_RAYS) {
-      break;
-    }
-    switch ((char)myFile.peek()) {
-      case ',':
-      myFile.read();
-      break;
-      case '|':
-      ray++;
-      px = 0;
-      myFile.read();
-      break;
-
-      default:
-      int ri1 = myFile.read(); 
-      int ri2 = myFile.read(); 
-      int gi1 = myFile.read(); 
-      int gi2 = myFile.read(); 
-      int bi1 = myFile.read(); 
-      int bi2 = myFile.read(); 
-
-      uint8_t r = min(255, ((charToHex(ri1) << 4) & 0xF0) | charToHex(ri2));
-      uint8_t g = min(255, ((charToHex(gi1) << 4) & 0xF0) | charToHex(gi2));
-      uint8_t b = min(255, ((charToHex(bi1) << 4) & 0xF0) | charToHex(bi2));
-
+  char colorHex[3];
+  for(ray = 0; ray < NUM_RAYS; ray++) {
+    for(int px = 0; px < COL_HEIGHT; px++) {
+      myFile.readBytes(colorHex, 3);
+      uint8_t r = colorHex[0];
+      uint8_t g = colorHex[1];
+      uint8_t b = colorHex[2];
       imageRays[ray][px] = CRGB(r, g, b);
-
-      px++;
     }
   }
   myFile.close();
+  delay(8);
 }
 
 String readFileFromSerial() {
@@ -156,7 +135,7 @@ void initSD(bool readSerial) {
       importImageFromSD(filename);
     } else {
       // importNextImage();
-      importImageFromSD("images/space_dicks.txt");
+      importImageFromSD("images/butterfly.rayb");
     }
   }
 

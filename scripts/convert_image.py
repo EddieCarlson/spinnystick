@@ -67,15 +67,9 @@ green_pixels = get_pixel_values(g_channel, coordinates)
 blue_pixels = get_pixel_values(b_channel, coordinates)
 
 rgb_pixels = list(zip(red_pixels, green_pixels, blue_pixels))
-rgb_pixels_24bit = ["".join([format(v, '02x') for v in [r, g, b]]) for [r, g, b] in rgb_pixels]
+byte_list = bytearray(np.array(rgb_pixels).flatten())
 
-ray_pixels_pipe_list = "|".join([",".join(rgb_pixels_24bit[(ray * num_pixels):((ray + 1) * num_pixels)]) for ray in range(0, num_rays)])
+output_filename = input_filename.split('.')[0] + ".rayb"
 
-output_filename = input_filename.split(".")[0] + ".txt"
-
-output = ray_pixels_pipe_list + "|"
-
-if(include_filename_header):
-   output = output_filename + "|" + output
-
-print(output)
+with open(output_filename, "wb") as out:
+  out.write(byte_list)
