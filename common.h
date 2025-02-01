@@ -7,7 +7,7 @@
 #define ROPE_PIXELS 25
 #define NUM_RAYS 1440
 
-const uint8_t interruptPin = 40;
+const uint8_t nextImagePin = 40;
 
 const int image_size = (ROPE_PIXELS + COL_HEIGHT) * 2;
 

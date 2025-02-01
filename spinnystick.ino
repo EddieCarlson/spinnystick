@@ -14,13 +14,16 @@
 
 #include "sd_card.h"
 #include "animation/shapes.h"
+#include <Bounce2.h>
 
 const bool readSerial = false;
 
+Bounce2::Button nextImageButton = Bounce2::Button();
+
 void initButtons() {
-  pinMode(interruptPin, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(interruptPin), setNextImageBool, FALLING);
-  interrupts();
+  nextImageButton.attach(nextImagePin, INPUT_PULLUP);
+  nextImageButton.interval(25); // millisecond debounce
+  nextImageButton.setPressedState(LOW);
 }
 
 void setup() {
@@ -36,10 +39,10 @@ void setup() {
   // initIMU(IMU, IMU_ADDRESS);
 }
 
-void checkInterrupts() {
-  if (changeImage) {
+void checkButtons() {
+  nextImageButton.update();
+  if (nextImageButton.pressed()) {
     importNextImage();
-    changeImage = false;
   }
 }
 
@@ -47,7 +50,7 @@ unsigned long lastLoopPrint = micros();
 
 void loop() {
   unsigned long start = micros();
-  checkInterrupts();
+  checkButtons();
   displayCurImageRay();
   unsigned long duration2 = micros() - start;
   if (micros() - lastLoopPrint > 2000000) {

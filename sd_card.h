@@ -70,6 +70,7 @@ uint8_t charToHex(char hexChar) {
   }
 }
 
+//TODO: can i just write bytes to the file and read them in as ints? read 24 bits at a time and create the CRGB from it?
 void importImageFromSD(String name) {
   Serial.print("importing image: ");
   Serial.println(name);
@@ -155,7 +156,7 @@ void initSD(bool readSerial) {
       importImageFromSD(filename);
     } else {
       // importNextImage();
-      importImageFromSD("images/zhara_shrooms.txt");
+      importImageFromSD("images/space_dicks.txt");
     }
   }
 
