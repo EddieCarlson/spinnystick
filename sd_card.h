@@ -79,10 +79,8 @@ void importImageFromSD(String name) {
   Serial.println(name);
 
   File myFile = SD.open(name.c_str());
-  int ray = 0;
-  int px = 0;
   char colorHex[3];
-  for(ray = 0; ray < NUM_RAYS; ray++) {
+  for(int ray = 0; ray < NUM_RAYS; ray++) {
     for(int px = 0; px < COL_HEIGHT; px++) {
       myFile.readBytes(colorHex, 3);
       uint8_t r = colorHex[0];
