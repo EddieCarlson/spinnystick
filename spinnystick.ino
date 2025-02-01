@@ -20,11 +20,10 @@
 const bool readSerial = false;
 
 Bounce2::Button nextImageButton = Bounce2::Button();
+ButtonAction nextImageButtonAction = ButtonAction(nextImageButton, nextImagePin, importNextImage);
 
 void initButtons() {
-  nextImageButton.attach(nextImagePin, INPUT_PULLUP);
-  nextImageButton.interval(25); // millisecond debounce
-  nextImageButton.setPressedState(LOW);
+  nextImageButtonAction.init();
 }
 
 void setup() {
@@ -41,10 +40,8 @@ void setup() {
 }
 
 void checkButtons() {
-  nextImageButton.update();
-  if (nextImageButton.pressed()) {
-    importNextImage();
-  }
+  nextImageButtonAction.update();
+  nextImageButtonAction.actIfPressed();
 }
 
 unsigned long lastLoopPrint = micros();

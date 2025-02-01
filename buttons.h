@@ -31,9 +31,13 @@ class ButtonAction {
     }
 
     void init() {
-      button.attach(nextImagePinNext, INPUT_PULLUP);
+      button.attach(pin, INPUT_PULLUP);
       button.interval(debounceMillis);
       button.setPressedState(LOW);
+    }
+
+    void update() {
+      button.update();
     }
 
     bool actIfPressed() {

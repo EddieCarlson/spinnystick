@@ -7,7 +7,7 @@
 
 volatile bool changeImage = false;
 int imageIndex = 0;
-int maxImageIndex = -1;
+int numImages = -1;
 
 String selectImageNameByIndex(bool printNames) {
   File imagesRoot = SD.open("/images");
@@ -23,8 +23,8 @@ String selectImageNameByIndex(bool printNames) {
 
     f = imagesRoot.openNextFile();
     if (!f) { // no files remaining - cycle back to first file
-      if (maxImageIndex == -1) {
-        maxImageIndex = imageIndex - 1;
+      if (numImages == -1) {
+        numImages = imageCount + 1;
       }
       imageIndex = 0;
       imagesRoot.close();
@@ -123,14 +123,11 @@ String readFileFromSerial() {
 
 void importNextImage() {
   importImageFromSD(selectImageNameByIndex());
-  imageIndex++;
+  imageIndex = (imageIndex + 1) % numImages;
 }
 
 void importPrevImage() {
-  int prevImageIndex = imageIndex - 2;
-  if (prevImageIndex < 0) {
-    prevImageIndex = maxImageIndex;
-  }
+  imageIndex = (imageIndex - 2 + numImages) % (numImages);
   importNextImage();
 }
 
@@ -140,18 +137,19 @@ void initSD(bool readSerial) {
     return;
   } else {
     Serial.println("SD card init successful");
+    listAllImages();
     if (readSerial) {
       String filename = readFileFromSerial();
       importImageFromSD(filename);
     } else {
-      // importNextImage();
-      importImageFromSD("images/butterfly.rayb");
+      importNextImage();
     }
+    // importImageFromSD("images/butterfly.rayb");
+    Serial.print("num Images: ");
+    Serial.println(numImages);
   }
 
-  delay(100);
-
-  listAllImages();
+  delay(40);
 }
 
 void setNextImageBool() {
