@@ -10,7 +10,7 @@
 #define CLOCKPIN   27
 #define BRIGHTNESS 31 // 0 to 31
 
-const double maxBrightPct = 0.23;
+const double maxBrightPct = 0.31;
 const double minBrightFactorOnly = 0.051;
 
 double brightness_factor = 0.07; // 0 - 1
@@ -29,19 +29,27 @@ class Brightness {
       if (pctBright > minBrightFactorOnly) {
         brightness32 = 0xFF000000;
         rgb_factor = pctBright;
-      } else {
+      } else if (pctBright > (minBrightFactorOnly / 3)) {
         brightness32 = 0xF0000000;
         rgb_factor = pctBright * 2.0;
+      } else {
+        brightness32 = 0xE8000000;
+        rgb_factor = pctBright * 4.0;
       }
     }
 };
 
-Brightness brightnesses[6] = {Brightness(0.03), Brightness(0.05), Brightness(0.08), Brightness(0.12), Brightness(0.16), Brightness(0.21)};
+Brightness brightnesses[6] = {Brightness(0.01), Brightness(0.045), Brightness(0.08), Brightness(0.14), Brightness(0.21), Brightness(0.3)};
 
 CRGB pixels[COL_HEIGHT];
 
 inline uint32_t getFrame(uint8_t r, uint8_t g, uint8_t b) {
-  return brightness32 | ((uint32_t) (b << 16) & 0xFF0000) | ((uint32_t) ((g << 8) & 0xFF00)) | ((uint32_t) ((r & 0xFF)));
+  return (
+    brightness32 |
+    ((uint32_t) (b << 16) & 0xFF0000) |
+    ((uint32_t) ((g << 8) & 0xFF00)) |
+    ((uint32_t) ((r & 0xFF)))
+  );
 }
 
 inline uint32_t getFrame(CRGB color) {

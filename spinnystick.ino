@@ -20,7 +20,7 @@
 const bool readSerial = false;
 
 Bounce2::Button nextImageButton = Bounce2::Button();
-ButtonAction nextImageButtonAction = ButtonAction(nextImageButton, nextImagePin, importNextImage);
+ButtonAction nextImageButtonAction = ButtonAction(nextImageButton, nextImagePin, setNextPeriod);
 
 void initButtons() {
   nextImageButtonAction.init();
@@ -36,6 +36,8 @@ void setup() {
   // addSquares();
   initSPI();
   initButtons();
+  setNextBrightness();
+  setNextPeriod();
   // initIMU(IMU, IMU_ADDRESS);
 }
 
