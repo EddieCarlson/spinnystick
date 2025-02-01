@@ -15,6 +15,7 @@
 #include "sd_card.h"
 #include "animation/shapes.h"
 #include <Bounce2.h>
+#include "buttons.h"
 
 const bool readSerial = false;
 

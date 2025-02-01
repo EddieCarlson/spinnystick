@@ -1,17 +1,42 @@
 #pragma once
 
+#include <arduino.h>
 #include <Adafruit_DotStar.h>
 #include "common.h"
 #include <FastLED.h>
+#include <math.h>
 
 #define DATAPIN    26
 #define CLOCKPIN   27
 #define BRIGHTNESS 31 // 0 to 31
 
-const double brightness_factor = 0.08; // 0 - 1
+const double maxBrightPct = 0.23;
+const double minBrightFactorOnly = 0.051;
 
-// TODO: raise this to FF if possible
-const uint32_t brightness32 = 0xFF000000;
+double brightness_factor = 0.07; // 0 - 1
+
+uint32_t brightness32 = 0xFF000000; // keep at FF if possible
+
+int curBrightnessIndex = 2;
+
+class Brightness {
+  public:
+    double rgb_factor;
+    uint32_t brightness32;
+
+    Brightness(double pctBright) {
+      pctBright = min(max(0, pctBright), maxBrightPct);
+      if (pctBright > minBrightFactorOnly) {
+        brightness32 = 0xFF000000;
+        rgb_factor = pctBright;
+      } else {
+        brightness32 = 0xF0000000;
+        rgb_factor = pctBright * 2.0;
+      }
+    }
+};
+
+Brightness brightnesses[6] = {Brightness(0.03), Brightness(0.05), Brightness(0.08), Brightness(0.12), Brightness(0.16), Brightness(0.21)};
 
 CRGB pixels[COL_HEIGHT];
 
@@ -64,4 +89,14 @@ bool setPixels(int px, uint8_t r, uint8_t g, uint8_t b) {
     pixels[px] = CRGB(r, g, b);
   }
   return settable;
+}
+
+void setBrightness(Brightness b) {
+  brightness_factor = b.rgb_factor;
+  brightness32 = b.brightness32;
+}
+
+void setNextBrightness() {
+  setBrightness(brightnesses[curBrightnessIndex]);
+  curBrightnessIndex = (curBrightnessIndex + 1) % 6;
 }

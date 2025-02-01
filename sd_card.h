@@ -7,6 +7,7 @@
 
 volatile bool changeImage = false;
 int imageIndex = 0;
+int maxImageIndex = -1;
 
 String selectImageNameByIndex(bool printNames) {
   File imagesRoot = SD.open("/images");
@@ -22,6 +23,9 @@ String selectImageNameByIndex(bool printNames) {
 
     f = imagesRoot.openNextFile();
     if (!f) { // no files remaining - cycle back to first file
+      if (maxImageIndex == -1) {
+        maxImageIndex = imageIndex - 1;
+      }
       imageIndex = 0;
       imagesRoot.close();
       delay(50);
@@ -122,6 +126,14 @@ String readFileFromSerial() {
 void importNextImage() {
   importImageFromSD(selectImageNameByIndex());
   imageIndex++;
+}
+
+void importPrevImage() {
+  int prevImageIndex = imageIndex - 2;
+  if (prevImageIndex < 0) {
+    prevImageIndex = maxImageIndex;
+  }
+  importNextImage();
 }
 
 void initSD(bool readSerial) {
