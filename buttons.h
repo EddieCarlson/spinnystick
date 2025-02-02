@@ -52,7 +52,7 @@ class ButtonAction {
 ButtonAction buttonActions[4] = {
   ButtonAction(nextImageNewButton, nextImagePinNext, importNextImage),
   ButtonAction(prevImageButton, prevImagePin, importPrevImage),
-  ButtonAction(brightnessButton, nextImagePinNext, setNextBrightness),
+  ButtonAction(brightnessButton, brightnessPin, setNextBrightness),
   ButtonAction(periodButton, prevImagePin, setNextPeriod)
 };
 

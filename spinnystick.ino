@@ -22,10 +22,6 @@ const bool readSerial = false;
 Bounce2::Button nextImageButton = Bounce2::Button();
 ButtonAction nextImageButtonAction = ButtonAction(nextImageButton, nextImagePin, setNextPeriod);
 
-void initButtons() {
-  nextImageButtonAction.init();
-}
-
 void setup() {
   Serial.begin(9600);
   uint32_t start = millis();
@@ -35,7 +31,7 @@ void setup() {
   initSD(readSerial);
   // addSquares();
   initSPI();
-  initButtons();
+  initButtonsNew();
   setNextBrightness();
   setNextPeriod();
   // initIMU(IMU, IMU_ADDRESS);
@@ -50,7 +46,7 @@ unsigned long lastLoopPrint = micros();
 
 void loop() {
   unsigned long start = micros();
-  checkButtons();
+  checkButtonsNext();
   displayCurImageRay();
   unsigned long duration2 = micros() - start;
   if (micros() - lastLoopPrint > 2000000) {
