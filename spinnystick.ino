@@ -19,9 +19,6 @@
 
 const bool readSerial = false;
 
-Bounce2::Button nextImageButton = Bounce2::Button();
-ButtonAction nextImageButtonAction = ButtonAction(nextImageButton, nextImagePin, setNextPeriod);
-
 void setup() {
   Serial.begin(9600);
   uint32_t start = millis();
@@ -35,11 +32,6 @@ void setup() {
   setNextBrightness();
   setNextPeriod();
   // initIMU(IMU, IMU_ADDRESS);
-}
-
-void checkButtons() {
-  nextImageButtonAction.update();
-  nextImageButtonAction.actIfPressed();
 }
 
 unsigned long lastLoopPrint = micros();
@@ -59,3 +51,4 @@ void loop() {
   // displayCardioids();
 }
 
+// ls | xargs -I {} python3 ../convert_image.py {} no_header
