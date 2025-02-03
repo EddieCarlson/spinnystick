@@ -28,7 +28,7 @@ void setup() {
   initSD(readSerial);
   // addSquares();
   initSPI();
-  initButtonsNew();
+  initButtons();
   setNextBrightness();
   setNextPeriod();
   // initIMU(IMU, IMU_ADDRESS);
