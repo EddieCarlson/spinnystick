@@ -39,7 +39,9 @@ unsigned long lastLoopPrint = micros();
 void loop() {
   unsigned long start = micros();
   checkButtonsNext();
-  displayCurImageRay();
+  if (imageInitialized) {
+    displayCurImageRay();
+  }
   unsigned long duration2 = micros() - start;
   if (micros() - lastLoopPrint > 2000000) {
     Serial.println("loop");

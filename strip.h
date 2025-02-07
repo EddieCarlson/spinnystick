@@ -39,7 +39,7 @@ class Brightness {
     }
 };
 
-Brightness brightnesses[6] = {Brightness(0.01), Brightness(0.045), Brightness(0.08), Brightness(0.14), Brightness(0.21), Brightness(0.3)};
+Brightness brightnesses[7] = {Brightness(0.02), Brightness(0.03), Brightness(0.042), Brightness(0.55), Brightness(0.75), Brightness(0.1), Brightness(0.2)};
 
 CRGB pixels[COL_HEIGHT];
 
@@ -106,5 +106,5 @@ void setBrightness(Brightness b) {
 
 void setNextBrightness() {
   setBrightness(brightnesses[curBrightnessIndex]);
-  curBrightnessIndex = (curBrightnessIndex + 1) % 6;
+  curBrightnessIndex = (curBrightnessIndex + 1) % 7;
 }

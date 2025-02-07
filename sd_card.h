@@ -8,6 +8,7 @@
 volatile bool changeImage = false;
 int imageIndex = 0;
 int numImages = -1;
+bool imageInitialized = false;
 
 String selectImageNameByIndex(bool printNames) {
   File imagesRoot = SD.open("/images");
@@ -90,6 +91,7 @@ void importImageFromSD(String name) {
     }
   }
   myFile.close();
+  imageInitialized = true;
   delay(8);
 }
 
@@ -140,9 +142,9 @@ void initSD(bool readSerial) {
     listAllImages();
     if (readSerial) {
       String filename = readFileFromSerial();
-      importImageFromSD(filename);
+      // importImageFromSD(filename);
     } else {
-      importNextImage();
+      // importNextImage();
     }
     // importImageFromSD("images/butterfly.rayb");
     Serial.print("num Images: ");
