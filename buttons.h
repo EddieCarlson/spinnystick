@@ -3,6 +3,7 @@
 #include <arduino.h>
 #include <Bounce2.h>
 #include "sd_card.h"
+#include "imu_init.h"
 
 const uint16_t debounceMillis = 25;
 
@@ -15,6 +16,8 @@ Bounce2::Button nextImageButton = Bounce2::Button();
 Bounce2::Button prevImageButton = Bounce2::Button();
 Bounce2::Button brightnessButton = Bounce2::Button();
 Bounce2::Button periodButton = Bounce2::Button();
+
+bool firstPush = true;
 
 class ButtonAction {
   public:
@@ -43,7 +46,12 @@ class ButtonAction {
     bool actIfPressed() {
       bool pressed = button.pressed();
       if (pressed) {
-        action();
+        if (firstPush) {
+          calibrateIMU();
+          firstPush = false;
+        } else {
+          action();
+        }
       }
       return pressed;
     }

@@ -2,24 +2,27 @@
 
 #include "FastIMU.h"
 #include <Wire.h>
+#include <SD.h>
+#include <string>
 
 #define IMU_ADDRESS 0x68    //Change to the address of the IMU
 #define PERFORM_CALIBRATION //Comment out this line to skip calibration at start
 MPU6500 IMU;               //Change to the name of any supported IMU!
 // Other supported IMUS: MPU9255 MPU9250 MPU6886 MPU6050 ICM20689 ICM20690 BMI055 BMX055 BMI160 LSM6DS3 LSM6DSL
 
-const int I2C_SDA = 18;   //I2C Data pin
-const int I2C_SCL = 19;   //I2c Clock pin
+const int I2C_SDA = 25;   //I2C Data pin
+const int I2C_SCL = 24;   //I2c Clock pin
 
 calData calib = { 0 };  //Calibration data
 AccelData accelData;    //Sensor data
 GyroData gyroData;
 
+File sensorLog;
+
 void calibrateIMU() {
-  Serial.println("FastIMU calibration & data example");
-  delay(1500);
-  Serial.println("Keep IMU level.");
   delay(3000);
+  Serial.println("FastIMU calibration & data example");
+  Serial.println("Keep IMU level.");
 
   IMU.calibrateAccelGyro(&calib);
 
@@ -37,10 +40,11 @@ void calibrateIMU() {
   Serial.print(", ");
   Serial.println(calib.gyroBias[2]);
 
-  delay(3000);
+  delay(2000);
 }
 
 void initIMU() {
+  sensorLog = SD.open("sensor_log.txt", FILE_WRITE);
   Wire.begin();
   Wire.setSDA(I2C_SDA);
   Wire.setSCL(I2C_SCL);
@@ -52,11 +56,6 @@ void initIMU() {
     Serial.println(imuInitErr);
     while (true) { ; }
   }
-
-// TODO: indent?
-#ifdef PERFORM_CALIBRATION
-  calibrateIMU();
-#endif
 
   int gyroRngErr = IMU.setGyroRange(1000);
   int accRngErr = IMU.setAccelRange(8);
@@ -84,4 +83,25 @@ double getRotationalSpeed() {
   updateGyro();
   // TODO: some function of gyroX/Y/Z?
   return 0.0;
+}
+
+void printStuff() {
+  unsigned long start = micros();
+  IMU.update();
+  IMU.getAccel(&accelData);
+  IMU.getGyro(&gyroData);
+  unsigned long microdiff = micros() - start;
+  sensorLog.write("micros for updates: " + std::tostring(microdiff).c_str() + '\n');
+  sensorLog.write(std::tostring(accelData.accelX).c_str());
+  sensorLog.write("|");
+  sensorLog.write(std::tostring(accelData.accelY).c_str());
+  sensorLog.write("|");
+  sensorLog.write(std::tostring(accelData.accelZ).c_str());
+  sensorLog.write("|");
+  sensorLog.write(std::tostring(gyroData.gyroX).c_str());
+  sensorLog.write("|");
+  sensorLog.write(std::tostring(gyroData.gyroY).c_str());
+  sensorLog.write("|");
+  sensorLog.write(std::tostring(gyroData.gyroZ).c_str());
+  sensorLog.write('\n');
 }

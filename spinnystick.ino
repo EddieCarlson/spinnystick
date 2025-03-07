@@ -16,6 +16,7 @@
 #include "animation/shapes.h"
 #include <Bounce2.h>
 #include "buttons.h"
+#include "imu_init.h"
 
 const bool readSerial = false;
 
@@ -27,6 +28,7 @@ void setup() {
 
   initSD(readSerial);
   // addSquares();
+  initIMU();
   initSPI();
   initButtons();
   setNextBrightness();
@@ -39,16 +41,18 @@ unsigned long lastLoopPrint = micros();
 void loop() {
   unsigned long start = micros();
   checkButtonsNext();
-  if (imageInitialized) {
-    displayCurImageRay();
-  }
-  unsigned long duration2 = micros() - start;
-  if (micros() - lastLoopPrint > 2000000) {
-    Serial.println("loop");
-    Serial.print("display ray image micros: ");
-    Serial.println(duration2);
-    lastLoopPrint = micros();
-  }
+  printStuff();
+  // if (imageInitialized) {
+  //   displayCurImageRay();
+  // }
+  // unsigned long duration2 = micros() - start;
+  while (micros() - start < 27200) { ; }
+  // if (micros() - lastLoopPrint > 2000000) {
+  //   Serial.println("loop");
+  //   Serial.print("display ray image micros: ");
+  //   Serial.println(duration2);
+  //   lastLoopPrint = micros();
+  // }
 
   // displayCardioids();
 }
