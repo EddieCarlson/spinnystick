@@ -38,7 +38,10 @@ void setup() {
 
 unsigned long lastLoopPrint = micros();
 
+
+
 void loop() {
+
   unsigned long start = micros();
   checkButtonsNext();
   printStuff();

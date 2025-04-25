@@ -48,7 +48,7 @@ void initIMU() {
   Wire.begin();
   Wire.setSDA(I2C_SDA);
   Wire.setSCL(I2C_SCL);
-  Wire.setClock(400000); //400khz clock - max for accelerometer?
+  // Wire.setClock(400000); //400khz clock - max for accelerometer?
 
   int imuInitErr = IMU.init(calib, IMU_ADDRESS);
   if (imuInitErr != 0) {
@@ -85,23 +85,30 @@ double getRotationalSpeed() {
   return 0.0;
 }
 
+int loopCount = 0;
+
 void printStuff() {
+  loopCount++;
+  if (loopCount % 11 == 0) {
+    sensorLog.println("-----------------------");
+  }
   unsigned long start = micros();
   IMU.update();
   IMU.getAccel(&accelData);
   IMU.getGyro(&gyroData);
   unsigned long microdiff = micros() - start;
-  sensorLog.write("micros for updates: " + std::tostring(microdiff).c_str() + '\n');
-  sensorLog.write(std::tostring(accelData.accelX).c_str());
-  sensorLog.write("|");
-  sensorLog.write(std::tostring(accelData.accelY).c_str());
-  sensorLog.write("|");
-  sensorLog.write(std::tostring(accelData.accelZ).c_str());
-  sensorLog.write("|");
-  sensorLog.write(std::tostring(gyroData.gyroX).c_str());
-  sensorLog.write("|");
-  sensorLog.write(std::tostring(gyroData.gyroY).c_str());
-  sensorLog.write("|");
-  sensorLog.write(std::tostring(gyroData.gyroZ).c_str());
-  sensorLog.write('\n');
+  sensorLog.print("micros for updates: " + microdiff + '\n');
+  sensorLog.print(std::to_string(accelData.accelX).c_str());
+  sensorLog.print("|");
+  sensorLog.print(accelData.accelY);
+  Serial.println(accelData.accelY);
+  sensorLog.print("|");
+  sensorLog.print(accelData.accelZ);
+  sensorLog.print("|");
+  sensorLog.print(gyroData.gyroX);
+  sensorLog.print("|");
+  sensorLog.print(gyroData.gyroY);
+  sensorLog.print("|");
+  sensorLog.print(gyroData.gyroZ);
+  sensorLog.print('\n');
 }

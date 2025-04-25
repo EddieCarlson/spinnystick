@@ -5,7 +5,7 @@
 #define NUMPIXELS 200
 #define COL_HEIGHT 97
 #define ROPE_PIXELS 25
-#define NUM_RAYS 1440
+#define NUM_RAYS 1080
 
 const uint8_t nextImagePin = 40;
 
