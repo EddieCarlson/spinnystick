@@ -26,14 +26,13 @@ void setup() {
   while(!Serial && (millis() - start < 2000)) { ; }
   Serial.println("hi");
 
-  initSD(readSerial);
+  // initSD(readSerial);
   // addSquares();
   initIMU();
-  initSPI();
-  initButtons();
-  setNextBrightness();
-  setNextPeriod();
-  // initIMU(IMU, IMU_ADDRESS);
+  // initSPI();
+  // initButtons();
+  // setNextBrightness();
+  // setNextPeriod();
 }
 
 unsigned long lastLoopPrint = micros();

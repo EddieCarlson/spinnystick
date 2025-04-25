@@ -7,7 +7,7 @@
 
 #define IMU_ADDRESS 0x68    //Change to the address of the IMU
 #define PERFORM_CALIBRATION //Comment out this line to skip calibration at start
-MPU6500 IMU;               //Change to the name of any supported IMU!
+MPU6500 IMU(Wire2);               //Change to the name of any supported IMU!
 // Other supported IMUS: MPU9255 MPU9250 MPU6886 MPU6050 ICM20689 ICM20690 BMI055 BMX055 BMI160 LSM6DS3 LSM6DSL
 
 const int I2C_SDA = 25;   //I2C Data pin
@@ -44,11 +44,11 @@ void calibrateIMU() {
 }
 
 void initIMU() {
-  sensorLog = SD.open("sensor_log.txt", FILE_WRITE);
-  Wire.begin();
-  Wire.setSDA(I2C_SDA);
-  Wire.setSCL(I2C_SCL);
-  // Wire.setClock(400000); //400khz clock - max for accelerometer?
+  // sensorLog = SD.open("sensor_log.txt", FILE_WRITE);
+  Wire2.begin();
+  Wire2.setSDA(I2C_SDA);
+  Wire2.setSCL(I2C_SCL);
+  Wire2.setClock(400000); //400khz clock - max for accelerometer?
 
   int imuInitErr = IMU.init(calib, IMU_ADDRESS);
   if (imuInitErr != 0) {
@@ -90,25 +90,25 @@ int loopCount = 0;
 void printStuff() {
   loopCount++;
   if (loopCount % 11 == 0) {
-    sensorLog.println("-----------------------");
+    Serial.println("-----------------------");
   }
   unsigned long start = micros();
   IMU.update();
   IMU.getAccel(&accelData);
   IMU.getGyro(&gyroData);
   unsigned long microdiff = micros() - start;
-  sensorLog.print("micros for updates: " + microdiff + '\n');
-  sensorLog.print(std::to_string(accelData.accelX).c_str());
-  sensorLog.print("|");
-  sensorLog.print(accelData.accelY);
+  Serial.print("micros for updates: " + microdiff + '\n');
+  Serial.print(std::to_string(accelData.accelX).c_str());
+  Serial.print("|");
+  Serial.print(accelData.accelY);
   Serial.println(accelData.accelY);
-  sensorLog.print("|");
-  sensorLog.print(accelData.accelZ);
-  sensorLog.print("|");
-  sensorLog.print(gyroData.gyroX);
-  sensorLog.print("|");
-  sensorLog.print(gyroData.gyroY);
-  sensorLog.print("|");
-  sensorLog.print(gyroData.gyroZ);
-  sensorLog.print('\n');
+  Serial.print("|");
+  Serial.print(accelData.accelZ);
+  Serial.print("|");
+  Serial.print(gyroData.gyroX);
+  Serial.print("|");
+  Serial.print(gyroData.gyroY);
+  Serial.print("|");
+  Serial.print(gyroData.gyroZ);
+  Serial.print('\n');
 }
