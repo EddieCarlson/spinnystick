@@ -26,7 +26,7 @@ void setup() {
   while(!Serial && (millis() - start < 2000)) { ; }
   Serial.println("hi");
 
-  // initSD(readSerial);
+  initSD(readSerial);
   // addSquares();
   initIMU();
   // initSPI();
@@ -48,7 +48,11 @@ void loop() {
   //   displayCurImageRay();
   // }
   // unsigned long duration2 = micros() - start;
-  while (micros() - start < 27200) { ; }
+  while (micros() - start < 27270) { ; }
+  if (micros() - lastLoopPrint > 27280 * 11 * 20) {
+    stopRecording();
+    Serial.println("stopped");
+  }
   // if (micros() - lastLoopPrint > 2000000) {
   //   Serial.println("loop");
   //   Serial.print("display ray image micros: ");

@@ -44,7 +44,7 @@ void calibrateIMU() {
 }
 
 void initIMU() {
-  // sensorLog = SD.open("sensor_log.txt", FILE_WRITE);
+  sensorLog = SD.open("sensor_log.txt", FILE_WRITE);
   Wire2.begin();
   Wire2.setSDA(I2C_SDA);
   Wire2.setSCL(I2C_SCL);
@@ -87,28 +87,32 @@ double getRotationalSpeed() {
 
 int loopCount = 0;
 
+void stopRecording() {
+  sensorLog.flush();
+  sensorLog.close();
+  delay(1000);
+}
+
 void printStuff() {
   loopCount++;
   if (loopCount % 11 == 0) {
-    Serial.println("-----------------------");
+    sensorLog.println("-----------------------");
   }
   unsigned long start = micros();
   IMU.update();
   IMU.getAccel(&accelData);
   IMU.getGyro(&gyroData);
   unsigned long microdiff = micros() - start;
-  Serial.print("micros for updates: " + microdiff + '\n');
-  Serial.print(std::to_string(accelData.accelX).c_str());
-  Serial.print("|");
-  Serial.print(accelData.accelY);
-  Serial.println(accelData.accelY);
-  Serial.print("|");
-  Serial.print(accelData.accelZ);
-  Serial.print("|");
-  Serial.print(gyroData.gyroX);
-  Serial.print("|");
-  Serial.print(gyroData.gyroY);
-  Serial.print("|");
-  Serial.print(gyroData.gyroZ);
-  Serial.print('\n');
+  sensorLog.print("micros for updates: " + microdiff + '\n');
+  sensorLog.print(accelData.accelX);
+  sensorLog.print("|");
+  sensorLog.print(accelData.accelY);
+  sensorLog.print("|");
+  sensorLog.print(accelData.accelZ);
+  sensorLog.print("|");
+  sensorLog.print(gyroData.gyroX);
+  sensorLog.print("|");
+  sensorLog.print(gyroData.gyroY);
+  sensorLog.print("|");
+  sensorLog.println(gyroData.gyroZ);
 }
