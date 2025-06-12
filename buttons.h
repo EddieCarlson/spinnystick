@@ -47,7 +47,7 @@ class ButtonAction {
       bool pressed = button.pressed();
       if (pressed) {
         if (firstPush) {
-          calibrateIMU();
+          // calibrateIMU();
           firstPush = false;
         } else {
           action();

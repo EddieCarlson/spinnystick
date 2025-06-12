@@ -19,7 +19,7 @@
 #include "imu_init.h"
 
 const bool readSerial = false;
-
+unsigned long ee = micros();
 void setup() {
   Serial.begin(9600);
   uint32_t start = millis();
@@ -29,29 +29,47 @@ void setup() {
   initSD(readSerial);
   // addSquares();
   initIMU();
-  // initSPI();
-  // initButtons();
-  // setNextBrightness();
-  // setNextPeriod();
+  initSPI();
+  initButtons();
+  setNextBrightness();
+  setNextPeriod();
+  // delay(15000);
+  Serial.println("started");
+  setAll(CRGB(20,0,0));
+  displayCurImageRay();
+  ee = micros();
 }
 
 unsigned long lastLoopPrint = micros();
-
+unsigned long lastZZ = micros();
 
 
 void loop() {
-
   unsigned long start = micros();
-  checkButtonsNext();
+  // checkButtonsNext();
   printStuff();
   // if (imageInitialized) {
   //   displayCurImageRay();
   // }
   // unsigned long duration2 = micros() - start;
-  while (micros() - start < 27270) { ; }
-  if (micros() - lastLoopPrint > 27280 * 11 * 20) {
+  while (micros() - start < 6000) { ; }
+  // orient();
+  // if (orientUp) {
+  //   setAll(CRGB(0,0,50));
+  //   displayCurImageRay();
+  // } else if (orientDown) {
+  //   setAll(CRGB(50,0,0));
+  //   displayCurImageRay();
+  // } else {
+  //   setAll(CRGB(0,0,0));
+  //   displayCurImageRay();
+  // }
+  if (micros() - ee > 20000000) {
     stopRecording();
     Serial.println("stopped");
+    setAll(CRGB(0,20,0));
+    displayCurImageRay();
+    for (;;) { delay(100); };
   }
   // if (micros() - lastLoopPrint > 2000000) {
   //   Serial.println("loop");

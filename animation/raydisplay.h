@@ -45,6 +45,14 @@ void calculateRay(double cur_rad) {
   }
 }
 
+void setAll(CRGB color) {
+  for (int rays = 0; rays < NUM_RAYS; rays++) {
+    for (int px = 0; px < COL_HEIGHT; px++) {
+      imageRays[rays][px] = color;
+    }
+  }
+}
+
 void calculate_current_ray() {
   calculateRay(curAngle());
 }
