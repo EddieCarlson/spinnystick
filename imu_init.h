@@ -24,7 +24,6 @@ File sensorLog;
 #define gyroHistorySize 60
 #define smoothingWindow 5
 
-int orientationHistoryPointer = 0;
 int historyCurIndex = 0;
 double revTrackingAngle = 0;
 double curAngleEstimate = -1;
@@ -39,16 +38,6 @@ double accelHistory[historySize]; // most recent samples of acceleration up/down
 double gyroHistory[historySize]; // most recent samples degrees per second of revolution
 double smoothedAccelHistory[historySize];
 unsigned long timestamps[historySize];
-
-unsigned long upTimestamps[orientationHistorySize]; // most recent best geusses at when the stick was pointed upwards
-unsigned long downTimestamps[orientationHistorySize]; // most recent best geusses at when the stick was pointed upwards
-double yAccelDiff[historySize]; // elem X = yAccelHistory[X] - yAccelHistory[X-1]
-double accelWeights[historySize];
-double accelWeightTotal;
-unsigned long imuTimestamps[80];
-double gyroWeightTotal;
-int accelPointer = 0;
-int gyroPointer = 0;
 
 void calibrateIMU() {
   delay(3000);
@@ -159,7 +148,7 @@ void update() {
 bool isSpinning() {
   bool spinningFast = true;
   for (int i = -5; i <= 0; i++) {
-    spinningFast = spinningFast && (prevGyro(i) > minDegreesPerSec);
+    spinningFast = spinningFast && (getGyro(i) > minDegreesPerSec);
   }
   return spinningFast;
 }
