@@ -21,16 +21,19 @@ File sensorLog;
 
 
 #define orientationHistorySize 5
-#define gyroHistorySize 60
+#define historySize 60
 #define smoothingWindow 5
 
 int historyCurIndex = 0;
 double revTrackingAngle = 0;
+int revTrackingStartIndex = 0;
 double curAngleEstimate = -1;
-int revTrackingStartPointer = 0;
+double curAngleEstimateUnmodded = -1;
 int upIndex = 0;
 int upTimestamp = 0;
 bool newUpIndex = false;
+bool currentlySpinning = false;
+bool firstRev = true;
 
 double minDegreesPerSec = 800;
 
@@ -73,11 +76,8 @@ void initIMU() {
 
   for (int i = 0; i < historySize; i++) {
     gyroHistory[i] = (double) 0;
-  }
-  for (int i = 0; i < historySize; i++) {
     accelHistory[i] = (double) 0;
-  }
-  for (int i = 0; i < historySize; i++) {
+    smoothedAccelHistory[i] = (double) 0;
     timestamps[i] = (unsigned long) 0;
   }
 }
@@ -102,6 +102,7 @@ int boundedHistoryIndex(int anyIndex) {
 double getGyro(int anyIndex) { return gyroHistory[boundedHistoryIndex(anyIndex)]; }
 
 double getCurGyro(int offset) { return getGyro(historyCurIndex + offset); }
+double getCurGyro() { return getGyro(0); }
 
 double getAccel(int anyIndex) { return accelHistory[boundedHistoryIndex(anyIndex)]; }
 
@@ -119,7 +120,7 @@ unsigned long timeSince(int offset) {
   return timestamps[historyCurIndex] - timestamps[getCurTimestamp(offset)];
 }
 
-void update() {
+void updateHistory() {
   historyCurIndex = (historyCurIndex + 1) % historySize;
 
   unsigned long startMicros = micros();
@@ -140,17 +141,25 @@ void update() {
   smoothedAccelHistory[boundedHistoryIndex(historyCurIndex - 1)] += accelData.accY * 0.12;
   smoothedAccelHistory[boundedHistoryIndex(historyCurIndex - 2)] += accelData.accY * 0.08;
 
-  gyroHistory[boundedHistoryIndex(historyCurIndex + 3)] = 0;
-  accelHistory[boundedHistoryIndex(historyCurIndex + 3)] = 0;
-  smoothedAccelHistory[boundedHistoryIndex(historyCurIndex + 3)] = 0;
+  int threeAhead = boundedHistoryIndex(historyCurIndex + 3);
+  gyroHistory[threeAhead] = 0;
+  accelHistory[threeAhead] = 0;
+  smoothedAccelHistory[threeAhead] = 0;
+  timestamps[threeAhead] = 0;
 }
 
 bool isSpinning() {
-  bool spinningFast = true;
-  for (int i = -5; i <= 0; i++) {
-    spinningFast = spinningFast && (getGyro(i) > minDegreesPerSec);
+  if (currentlySpinning) {
+    return getCurGyro() > minDegreesPerSec;
+  } else {
+    int start = -1 * floor(historySize * 0.7);
+    for (int i = start; i <= 0; i++) {
+      if (getCurGyro(i) < minDegreesPerSec) {
+        return false;
+      }
+    }
+    return true;
   }
-  return spinningFast;
 }
 
 double degreesTraveledForIndex(int start) {
@@ -158,20 +167,17 @@ double degreesTraveledForIndex(int start) {
   return avgZ * microsBetween(start, start - 1);
 }
 
-bool updateRevTracker() {
-  double degreesSinceLastTimestamp = gyroHistory[historyCurIndex] * timeSince(-1) / 1000000;
-  // % 400 (instead of 360) to account for gyro integration not being perfect, to guarantee a high+low?
-  double newAngle = (revTrackingAngle + degreesSinceLastTimestamp) % 360; 
-  bool hasRevolved = newAngle < revTrackingAngle;
-  revTrackingAngle = newAngle;
-  return hasRevolved;
+void resetRevTracker() {
+  revTrackingStartIndex = historyCurIndex;
+  firstRev = true;
+  curAngleEstimate = 0;
 }
 
 int upIndexInLastRev() {
   double largestSmoothed = 0;
-  int largestSmoothedIndex = revTrackingStartPointer;
-  for (int i = revTrackingStartPointer; i != historyCurIndex - 2; i = (i + 1) % historySize) {
-    double smoothed = abs(smoothedAccelHistory[i]);
+  int largestSmoothedIndex = revTrackingStartIndex;
+  for (int i = revTrackingStartIndex; i != historyCurIndex - 2; i = (i + 1) % historySize) {
+    double smoothed = smoothedAccelHistory[i];
     if (smoothed > largestSmoothed) {
       largestSmoothed = smoothed;
       largestSmoothedIndex = i;
@@ -181,6 +187,7 @@ int upIndexInLastRev() {
   return largestSmoothedIndex;
 }
 
+// TODO: try to keep it so historyCurIndex is "ahead" of upIndex by less than 1/4 the historySize, to minimize gyroZX-summation errors
 double estimateAngleFromLastUp() {
   // obob?
   double estimate = 0;
@@ -192,40 +199,54 @@ double estimateAngleFromLastUp() {
 
 int successiveLargeDiscrepancies = 0;
 
-double updateAngleEstimate(bool revComplete) {
-  bool notFirstRev = curAngleEstimate > -0.5;
+double updateAngleEstimate() {
+  bool revComplete = false;
+  double oldEstimate = curAngleEstimate;
+  double degTraveled = degreesTraveledForIndex(historyCurIndex);
+  curAngleEstimate += degTraveled;
+  curAngleEstimate = curAngleEstimate % 360;
+  curAngleEstimateUnmodded += degTraveled;
+  // include padding so we don't end just before the peak
+  bool revComplete = curAngleEstimateUnmodded > 400;
   if (revComplete) {
     double estimatedFromUp = estimateAngleFromLastUp();
-    bool largeDiscrepancy = notFirstRev && (abs(curAngleEstimate - estimatedFromUp) > (50 + (successiveLargeDiscrepancies * 25)));
+    bool largeDiscrepancy = !firstRev &&
+      (abs(curAngleEstimate - estimatedFromUp) > (36 + (successiveLargeDiscrepancies * 36)));
     if (largeDiscrepancy) {
       successiveLargeDiscrepancies += 1;
     } else {
       successiveLargeDiscrepancies = 0;
-    }
-    if (!largeDiscrepancy) {
       curAngleEstimate = estimatedFromUp;
+      curAngleEstimateUnmodded = estimatedFromUp;
     }
-  } else if (notFirstRev) {
-    curAngleEstimate += degreesTraveledForIndex(historyCurIndex);
-    curAngleEstimate = curAngleEstimate % 360;
+    firstRev = false;
   }
+  return revComplete;
 }
 
 void sample() {
-  update();
-  if (isSpinning()) {
-    bool revComplete = updateRevTracker();
+  updateHistory();
+  currentlySpinning = isSpinning();
+  if (currentlySpinning) {
+    bool revComplete = updateAngleEstimate(revComplete);
     if (revComplete) {
-      upIndex = smoothGyro();
-      newUpIndex = true;
+      upIndex = upIndexInLastRev();
       upTimestamp = timestamps[upIndex];
-      revTrackingStartPointer = historyCurIndex;
+      // don't bother including the first fifth of elems after up index
+      revTrackingStartIndex = boundedHistoryIndex(upIndex + floor(historySize * 0.2));
     }
-    updateAngleEstimate(revComplete);
   } else {
-    revTrackingAngle = 0;
-    revTrackingStartPointer = historyCurIndex;
-    curAngleEstimate = -1;
+    resetRevTracker();
+  }
+  if (!currentlySpinning) {
+  }
+  bool revComplete = resetRevTracker();
+  if (currentlySpinning) {
+    if (revComplete) {
+      firstRev = true;
+      revTrackingAngle = curAngleEstimate;
+      revTrackingStartIndex = historyCurIndex;
+    }
   }
 }
 
