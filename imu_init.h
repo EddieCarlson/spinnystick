@@ -237,26 +237,47 @@ double estimateAngleFromLastUp() {
   return estimate;
 }
 
+int successiveLargeDiscrepancies = 0;
+
+double updateAngleEstimate(bool revComplete) {
+  bool notFirstRev = curAngleEstimate > -0.5;
+  if (revComplete) {
+    double estimatedFromUp = estimateAngleFromLastUp();
+    bool largeDiscrepancy = notFirstRev && (abs(curAngleEstimate - estimatedFromUp) > (50 + (successiveLargeDiscrepancies * 35)));
+    if (largeDiscrepancy) {
+      successiveLargeDiscrepancies += 1;
+    } else {
+      successiveLargeDiscrepancies = 0;
+    }
+    if (!largeDiscrepancy) {
+      curAngleEstimate = estimatedFromUp;
+    }
+  } else if (notFirstRev) {
+    curAngleEstimate += degreesTraveledForIndex(gyroHistoryPointer);
+    curAngleEstimate = curAngleEstimate % 360;
+  }
+}
+
 void sample() {
   update();
   if (!isFastEnough()) {
     revTrackingAngle = 0;
     revTrackingStartPointer = gyroHistoryPointer;
+    curAngleEstimate = -1;
     return
   }
-  if (updateRevTracker()) {
+  bool revComplete = updateRevTracker();
+  if (revComplete) {
     upIndex = smoothGyro();
     newUpIndex = true;
     upTimestamp = timestamps[upIndex];
     revTrackingStartPointer = gyroHistoryPointer;
-    if (curAngleEstimate > -0.5) {
-      curAngleEstimate = (estimateAngleFromLastUp() * 0.9) + (curAngleEstimate * 0.1);
-    }
-    curAngleEstimate = ;
-  } else {
-    curAngleEstimate += degreesTraveledForIndex(gyroHistoryPointer);
   }
+  updateAngleEstimate(revComplete);
 }
+
+// TODO: only display image when stick has had a gyroZ > 400 in the last second
+
 
 void printStuff() {
   loopCount++;
