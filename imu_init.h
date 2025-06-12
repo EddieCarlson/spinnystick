@@ -27,6 +27,7 @@ File sensorLog;
 int orientationHistoryPointer = 0;
 int gyroHistoryPointer = 0;
 double revTrackingAngle = 0;
+double curAngleEstimate = -1;
 int revTrackingStartPointer = 0;
 int upIndex = 0;
 int upTimestamp = 0;
@@ -151,6 +152,10 @@ double prevGyro(int offset) {
   return gyroZHistory[gyroPointerFor(offset)];
 }
 
+unsigned long microsBetween(int startIndex, int endIndex) {
+  return timestamps[unboundedGyroPointer(endIndex)] - timestamps[unboundedGyroPointer(startIndex)];
+}
+
 unsigned long timeSince(int offset) {
   return timestamps[gyroHistoryPointer] - timestamps[gyroPointerFor(offset)];
 }
@@ -164,10 +169,13 @@ void update() {
   gyroZHistory[gyroHistoryPointer] = gyroData.gyroZ;
   timestamps[gyroHistoryPointer] = micros();
 
+  // TODO: accel at
   double smoothedInit = (gyroAt(gyroHistoryPointer) * 0.6) + (gyroAt(gyroHistoryPointer - 1) * 0.15) + (gyroAt(gyroHistoryPointer - 2) * 0.05);
   smoothedGyroHistory[gyroHistoryPointer] = smoothedInit;
   smoothedGyroHistory[unboundedGyroPointer(gyroHistoryPointer - 1)] += gyroAt(gyroHistoryPointer) * 0.15;
   smoothedGyroHistory[unboundedGyroPointer(gyroHistoryPointer - 2)] += gyroAt(gyroHistoryPointer) * 0.05;
+
+  // TODO: clear others at +3 as well?
   smoothedGyroHistory[unboundedGyroPointer(gyroHistory + 3)] = 0;
 }
 
@@ -177,6 +185,24 @@ bool isFastEnough() {
     spinningFast = spinningFast && (prevGyro(i) > minDegreesPerSec);
   }
   return spinningFast;
+}
+
+int boundedGyroIndex(int anyIndex) {
+  int boundedIndex = anyIndex % gyroHistorySize;
+  if (boundedIndex < 0) {
+    boundedIndex = boundedIndex + gyroHistorySize;
+  }
+  return boundedIndex;
+}
+
+// TODO: use everywhere
+double getGyroZ(int anyIndex) {
+  return gyroZHistory[boundedGyroIndex(anyIndex)];
+}
+
+double degreesTraveledForIndex(int start) {
+  double avgZ = (getGyroZ(start) + getGyroZ(start - 1)) / 2.0
+  return avgZ * microsBetween(start, start - 1)
 }
 
 bool updateRevTracker() {
@@ -202,6 +228,15 @@ int upIndexInLastRev() {
   return largestSmoothedIndex;
 }
 
+double estimateAngleFromLastUp() {
+  // obob?
+  double estimate = 0;
+  for (int i = upIndex; i != gyroHistoryPointer + 1; i = (i + 1) % 60) {
+    estimate += degreesTraveledForIndex(i);
+  }
+  return estimate;
+}
+
 void sample() {
   update();
   if (!isFastEnough()) {
@@ -214,6 +249,12 @@ void sample() {
     newUpIndex = true;
     upTimestamp = timestamps[upIndex];
     revTrackingStartPointer = gyroHistoryPointer;
+    if (curAngleEstimate > -0.5) {
+      curAngleEstimate = (estimateAngleFromLastUp() * 0.9) + (curAngleEstimate * 0.1);
+    }
+    curAngleEstimate = ;
+  } else {
+    curAngleEstimate += degreesTraveledForIndex(gyroHistoryPointer);
   }
 }
 
