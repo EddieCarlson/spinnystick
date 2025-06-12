@@ -4,7 +4,6 @@
 #include <Wire.h>
 #include <SD.h>
 #include <string>
-#include <algorithm>
 
 #define IMU_ADDRESS 0x68    //Change to the address of the IMU
 #define PERFORM_CALIBRATION //Comment out this line to skip calibration at start
@@ -21,13 +20,30 @@ GyroData gyroData;
 File sensorLog;
 
 
-unsigned long upTimestamps[80]; // most recent 10 best geusses at when the stick was pointed upwards
-unsigned long downTimestamps[80]; // most recent 10 best geusses at when the stick was pointed upwards
-double yAccelHistory[80]; // last 80 samples of acceleration up/down
-double yAccelDiff[40]; // elem X = yAccelHistory[X] - yAccelHistory[X-1]
-double accelWeights[40];
+#define orientationHistorySize 5
+#define gyroHistorySize 60
+#define smoothingWindow 5
+
+int orientationHistoryPointer = 0;
+int gyroHistoryPointer = 0;
+double revTrackingAngle = 0;
+int revTrackingStartPointer = 0;
+int upIndex = 0;
+int upTimestamp = 0;
+bool newUpIndex = false;
+
+double minDegreesPerSec = 800;
+
+double yAccelHistory[gyroHistorySize]; // most recent samples of acceleration up/down
+double gyroZHistory[gyroHistorySize]; // most recent samples degrees per second of revolution
+double smoothedGyroHistory[gyroHistorySize];
+unsigned long timestamps[gyroHistorySize];
+
+unsigned long upTimestamps[orientationHistorySize]; // most recent best geusses at when the stick was pointed upwards
+unsigned long downTimestamps[orientationHistorySize]; // most recent best geusses at when the stick was pointed upwards
+double yAccelDiff[gyroHistorySize]; // elem X = yAccelHistory[X] - yAccelHistory[X-1]
+double accelWeights[gyroHistorySize];
 double accelWeightTotal;
-double gyroZHistory[80]; // last 80 samples degrees per second of revolution
 unsigned long imuTimestamps[80];
 double gyroWeightTotal;
 int accelPointer = 0;
@@ -71,7 +87,6 @@ void initIMU() {
   for (int i = 0; i < 80; i++) {
     downTimestamps[i] = (unsigned long) 0;
   }
-
   for (int i = 0; i < 80; i++) {
     yAccelHistory[i] = (double) 0;
   }
@@ -120,188 +135,86 @@ double rotationSpeedEstimate() {
   return sum / gyroWeightTotal;
 }
 
-unsigned long lastUp = micros();
-unsigned long lastDown = micros() + 20;
-bool orientUp = false;
-bool orientDown = false;
+int unboundedGyroPointer(int unboundedIndex) {
+  return (unboundedIndex + gyroHistorySize) % gyroHistorySize;
+}
 
-void orient() {
-  orientUp = false;
-  orientDown = false;
-  unsigned long startMicros = micros();
+int gyroAt(int unboundedIndex) {
+  return gyroZHistory[unboundedGyroPointer(unboundedIndex)];
+}
+
+int gyroPointerFor(int offset) {
+  return (gyroHistoryPointer + gyroHistorySize + offset) % gyroHistorySize;
+}
+
+double prevGyro(int offset) {
+  return gyroZHistory[gyroPointerFor(offset)];
+}
+
+unsigned long timeSince(int offset) {
+  return timestamps[gyroHistoryPointer] - timestamps[gyroPointerFor(offset)];
+}
+
+void update() {
   IMU.update();
   IMU.getAccel(&accelData);
   IMU.getGyro(&gyroData);
-  unsigned long sampleTime = (micros() + startMicros) / 2;
-  double accY = accelData.accelY;
-  int prevYPointer = (accelPointer + 39) % 40;
-  int prev2YPointer = (accelPointer + 38) % 40;
-  int prev3YPointer = (accelPointer + 37) % 40;
-  yAccelHistory[accelPointer] = accY;
-  yAccelDiff[accelPointer] = accY - yAccelHistory[prevYPointer];
-  double last5DiffSum = 0;
-  double last5DiffSumUnAbs = 0;
-  double prev5DiffSum = 0;
-  double twoPrev5DiffSum = 0;
+  gyroHistoryPointer = (gyroHistoryPointer + 1) % gyroHistorySize;
+  yAccelHistory[gyroHistoryPointer] = accelData.accY;
+  gyroZHistory[gyroHistoryPointer] = gyroData.gyroZ;
+  timestamps[gyroHistoryPointer] = micros();
 
-  for (int i = -2; i <= 0; i++) {
-    last5DiffSum += abs(yAccelDiff[(i + 40 + accelPointer) % 40]);
-  }
-  for (int i = -2; i <= 0; i++) {
-    last5DiffSumUnAbs += yAccelDiff[(i + 40 + accelPointer) % 40];
-  }
-  for (int i = -3; i <= -1; i++) {
-    prev5DiffSum += abs(yAccelDiff[(i + 40 + accelPointer) % 40]);
-  }
-  for (int i = -4; i <= -2; i++) {
-    twoPrev5DiffSum += abs(yAccelDiff[(i + 40 + accelPointer) % 40]);
-  }
+  double smoothedInit = (gyroAt(gyroHistoryPointer) * 0.6) + (gyroAt(gyroHistoryPointer - 1) * 0.15) + (gyroAt(gyroHistoryPointer - 2) * 0.05);
+  smoothedGyroHistory[gyroHistoryPointer] = smoothedInit;
+  smoothedGyroHistory[unboundedGyroPointer(gyroHistoryPointer - 1)] += gyroAt(gyroHistoryPointer) * 0.15;
+  smoothedGyroHistory[unboundedGyroPointer(gyroHistoryPointer - 2)] += gyroAt(gyroHistoryPointer) * 0.05;
+  smoothedGyroHistory[unboundedGyroPointer(gyroHistory + 3)] = 0;
+}
 
-  if (prev5DiffSum < last5DiffSum && prev5DiffSum > twoPrev5DiffSum) {
-    if (last5DiffSumUnAbs > 0) {
-      orientDown = true;
-    } else {
-      orientUp = true;
+bool isFastEnough() {
+  bool spinningFast = true
+  for (int i = -5; i <= 0; i++) {
+    spinningFast = spinningFast && (prevGyro(i) > minDegreesPerSec);
+  }
+  return spinningFast;
+}
+
+bool updateRevTracker() {
+  double degreesSinceLastTimestamp = gyroZHistory[gyroHistoryPointer] * timeSince(-1) / 1000000;
+  // % 400 (instead of 360) to account for gyro integration not being perfect, to guarantee a high+low?
+  double newAngle = (revTrackingAngle + degreesSinceLastTimestamp) % 360; 
+  bool hasRevolved = newAngle < revTrackingAngle;
+  revTrackingAngle = newAngle;
+  return hasRevolved;
+}
+
+int upIndexInLastRev() {
+  double largestSmoothed = 0;
+  int largestSmoothedIndex = revTrackingStartPointer;
+  for (int i = revTrackingStartPointer; i != gyroHistoryPointer - 2; i = (i + 1) % gyroHistorySize) {
+    double smoothed = abs(smoothedGyroHistory[i]);
+    if (smoothed > largestSmoothed) {
+      largestSmoothed = smoothed;
+      largestSmoothedIndex = i;
     }
   }
 
-  // GYRO Z tells us which direction it's spinning, so we can account for 15 deg off
-
-  // double prev5Sum = last5Sum + abs(yAccelDiff[(-5 + 40 + accelPointer) % 40]) - abs(yAccelDiff[accelPointer]);
-  // int lessCount = 0;
-  // if (accY < yAccelHistory[prevYPointer]) {
-  //   lessCount += 1
-  // } else {
-  //   lessCount -= 1;
-  // }
-  // if (accY < yAccelHistory[prev2YPointer]) {
-  //   lessCount += 1;
-  // } else {
-  //   lessCount -= 1;
-  // }
-  // if (yAccelHistory[prevYPointer] < yAccelHistory[prev2YPointer]) {
-  //   lessCount += 1;
-  // } else {
-  //   lessCount -= 1;
-  // }
-  // if (accY < yAccelHistory[prev3YPointer]) {
-  //   lessCount += 1;
-  // } else {
-  //   lessCount -= 1;
-  // }
-
-  // if (lessCount == 3 && lastDown > lastUp) {
-  //   orientUp = true;
-  //   lastUp = micros();
-  // } else if (lessCount == -3 && lastDown < lastUp) {
-  //   orientDown = true;
-  //   lastDown = micros();
-  // }
-
-  accelPointer = (accelPointer + 1) % 40;
-  gyroPointer = (gyroPointer + 1) % 100;
+  return largestSmoothedIndex;
 }
 
-unsigned long lastGyroSampleTime = micros();
-double assumedGyroAngle = 0;
-
-void initialOrient() {
-  unsigned long start = micros();
-  IMU.update();
-  IMU.getAccel(&accelData);
-  IMU.getGyro(&gyroData);
-  unsigned long microdiff = micros() - start;
-
-  int prevYPointer = (accelPointer - 1 + 80) % 80;
-  // int prev2YPointer = (accelPointer - 2 + 80) % 80;
-  // int prev3YPointer = (accelPointer - 3 + 80) % 80;
-
-  double accY = accelData.accelY;
-  double gyroZ = gyroData.gyroZ;
-  double prevGyroZ = 0;
-
-  while (gyroZ < 600 || prevGyroZ < 600) {
-    IMU.getAccel(&accelData);
-    IMU.getGyro(&gyroData);
-    prevGyroZ = gyroZ;
-    gyroZ = gyroData.gyroZ;
-    delay(300);
-  } 
-}
-
-void collectData() {
-  unsigned long start = micros();
-
-  int maxY = 0;
-  int minY = 0;
-  double readings[600];
-
-  for (int i = 0; i < 600; i++) {
-    unsigned long loopStart = micros();
-    IMU.update();
-    IMU.getAccel(&accelData);
-    IMU.getGyro(&gyroData);
-
-    double accY = accelData.accelY;
-    double gyroZ = gyroData.gyroZ;
-    readings[i] = accY;
-
-    unsigned long microdiff = micros() - loopStart;
-    delay(5);
+void sample() {
+  update();
+  if (!isFastEnough()) {
+    revTrackingAngle = 0;
+    revTrackingStartPointer = gyroHistoryPointer;
+    return
   }
-
-  int n = sizeof(arr)/sizeof(arr[0]);
-  sort(arr, arr + n);
-
-  int lowAcc = 0;
-  for(int i = 2; i < 6; i++) {
-    lowAcc += readings[i] / 4;
+  if (updateRevTracker()) {
+    upIndex = smoothGyro();
+    newUpIndex = true;
+    upTimestamp = timestamps[upIndex];
+    revTrackingStartPointer = gyroHistoryPointer;
   }
-  int highAcc = 0;
-  for(int i = 593; i < 597; i++) {
-    highAcc += readings[i] / 4;
-  }
-}
-
-void tryOrient() {
-  unsigned long start = micros();
-  IMU.update();
-  IMU.getAccel(&accelData);
-  IMU.getGyro(&gyroData);
-  unsigned long microdiff = micros() - start;
-
-  int prevYPointer = (accelPointer - 1 + 80) % 80;
-  // int prev2YPointer = (accelPointer - 2 + 80) % 80;
-  // int prev3YPointer = (accelPointer - 3 + 80) % 80;
-
-  double accY = accelData.accelY;
-  double gyroZ = gyroData.gyroZ;
-
-  yAccelHistory[accelPointer] = accY;
-  gyroZHistory[gyroPointer] = gyroZ;
-  yAccelDiff[accelPointer] = accY - yAccelHistory[prevYPointer];
-  imuTimestamps[accelPointer] = start;
-
-  assumedGyroAngle += (abs(gyroZ) * 1.011 * ((start - lastGyroSampleTime) / 1000000.0)) % 360;
-  bool closeTop = ((assumedGyroAngle + 15) % 360) < 26 || (assumedGyroAngle - 15) > 335;
-  bool closeBot = (assumedGyroAngle < 195 && assumedGyroAngle > 165);
-
-  if (yAccelDiff[accelPointer] > 0 && yAccelDiff[prevYPointer] > 0 && closeTop && lastDown > lastUp) {
-    orientUp = true;
-    lastUp = micros();
-    upTimestamps[accelPointer] = lastUp;
-    assumedGyroAngle = 0;
-  } else if (yAccelDiff[accelPointer] < 0 && yAccelDiff[prevYPointer] < 0 && closeBot && lastDown < lastUp) {
-    orientDown = true;
-    lastDown = micros();
-    downTimestamps[accelPointer] = lastDown;
-    assumedGyroAngle = 180;
-  }
-  
-
-
-  accelPointer = (accelPointer + 1) % 80;
-  gyroPointer = (gyroPointer + 1) % 80;
 }
 
 void printStuff() {
