@@ -26,7 +26,7 @@ void setup() {
   while(!Serial && (millis() - start < 2000)) { ; }
   Serial.println("hi");
 
-  initSD(readSerial);
+  // initSD(readSerial);
   // addSquares();
   initIMU();
   // calibrateIMU();
@@ -52,6 +52,8 @@ void loop() {
   // Serial.println("presample");
   bool oldCurrentSpin = currentlySpinning;
   sample();
+  unsigned long duration = micros() - start;
+  // Serial.println(duration);
   // updateIMU();
   // Serial.println("postsample");
   // if (currentlySpinning) {
@@ -69,7 +71,9 @@ void loop() {
   }
 
   // Serial.println("preprint");
-  printStuff();
+
+  // printStuff();
+
   // Serial.println("");
   // if (imageInitialized) {
   //   displayCurImageRay();

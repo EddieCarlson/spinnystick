@@ -15,10 +15,6 @@ const int I2C_SCL = 24;   //I2c Clock pin
 
 File sensorLog;
 
-
-#define orientationHistorySize 5
-#define smoothingWindow 5
-
 calData calib = { 0 };  //Calibration data
 AccelData accelData;    //Sensor data
 GyroData gyroData;
@@ -30,7 +26,7 @@ double curAngleEstimate = 0;
 double curAngleEstimatePadMod = 0;
 double curAngleEstimateUnmodded = 0;
 int upIndex = 0;
-int upTimestamp = 0;
+unsigned long upTimestamp = 0;
 bool newUpIndex = false;
 bool currentlySpinning = false;
 bool firstRev = true;
@@ -163,10 +159,8 @@ void updateHistory() {
   unsigned long updateMicros = updateIMU();
   timestamps[historyCurIndex] = updateMicros;
 
-  // Serial.println(accelData.accelY);
   accelHistory[historyCurIndex] = (double) abs(accelData.accelY);
   double gyroZX = sqrt(pow(gyroData.gyroZ, 2) + pow(gyroData.gyroX, 2));
-  // Serial.println(gyroZX);
   gyroHistory[historyCurIndex] = gyroZX;
 
   setSmoothedAccel();
@@ -213,7 +207,6 @@ int upIndexInLastRev() {
   return largestSmoothedIndex;
 }
 
-// TODO: try to keep it so historyCurIndex is "ahead" of upIndex by less than 1/4 the historySize, to minimize gyroZX-summation errors
 double estimateAngleFromLastUp() {
   // obob?
   double estimate = 0;
@@ -262,7 +255,7 @@ void sample() {
       rotationCount += 1;
       upIndex = upIndexInLastRev();
       upTimestamp = timestamps[upIndex];
-      // don't bother including the first chunk of elems after last up index for considering next upIndex
+      // don't include the first chunk of elems after last up index for considering next upIndex
       revTrackingStartIndex = boundedHistoryIndex(upIndex + floor(historySize * 0.15));
     }
   } else {
