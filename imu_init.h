@@ -34,6 +34,7 @@ int upTimestamp = 0;
 bool newUpIndex = false;
 bool currentlySpinning = false;
 bool firstRev = true;
+bool justRevolved = false;
 
 double minDegreesPerSec = 600;
 
@@ -240,12 +241,14 @@ void sample() {
   if (currentlySpinning) {
     bool revComplete = updateAngleEstimate();
     if (revComplete) {
+      justRevolved = true;
       upIndex = upIndexInLastRev();
       upTimestamp = timestamps[upIndex];
       // don't bother including the first chunk of elems after last up index for considering next upIndex
       revTrackingStartIndex = boundedHistoryIndex(upIndex + floor(historySize * 0.15));
     }
   } else {
+    justRevolved = false;
     resetRevTracker();
   }
 }
@@ -255,9 +258,9 @@ void sample() {
 
 void printStuff() {
   if (currentlySpinning) {
-    sensorLog.print(getCurTimestamp(0));
+    sensorLog.print(getCurTimestamp(0) / 1000);
     sensorLog.print("|");
-    sensorLog.print(timeSince(-1));
+    sensorLog.print(timeSince(-1) / 1000);
     sensorLog.print("|");
     sensorLog.print(curAngleEstimate);
     sensorLog.print("|");
@@ -274,6 +277,8 @@ void printStuff() {
     sensorLog.print(gyroData.gyroY);
     sensorLog.print("|");
     sensorLog.println(gyroData.gyroZ);
+    sensorLog.print("|");
+    sensorLog.print(justRevolved);
   } else {
     sensorLog.flush();
   }

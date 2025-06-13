@@ -48,6 +48,13 @@ void loop() {
   unsigned long start = micros();
   // checkButtonsNext();
   sample();
+  if (currentlySpinning) {
+    setAll(CRGB(20,0,0));
+    displayCurImageRay();
+  } else {
+    setAll(CRGB(0,0,0));
+    displayCurImageRay();
+  }
   printStuff();
   // if (imageInitialized) {
   //   displayCurImageRay();
