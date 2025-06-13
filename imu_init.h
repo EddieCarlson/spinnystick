@@ -231,7 +231,7 @@ double updateAngleEstimate() {
   if (revComplete) {
     double estimatedFromUp = estimateAngleFromLastUp();
     bool largeDiscrepancy = !firstRev &&
-      (abs(curAngleEstimate - estimatedFromUp) > (36 + (successiveLargeDiscrepancies * 36)));
+      (abs(curAngleEstimate - estimatedFromUp) > (42 + (successiveLargeDiscrepancies * 36)));
     if (largeDiscrepancy) {
       successiveLargeDiscrepancies += 1;
     } else {
