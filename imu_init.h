@@ -38,6 +38,7 @@ double gyroHistory[historySize];
 double smoothedAccelHistory[historySize];
 unsigned long timestamps[historySize];
 
+double curDegPerSec = -1;
 
 void calibrateIMU() {
   delay(3000);
@@ -244,12 +245,20 @@ double updateAngleEstimate() {
   return revComplete;
 }
 
+void setSpeed() {
+  if (curDegPerSec < -0.5) {
+    curDegPerSec = getCurGyro();
+  }
+  curDegPerSec = (curDegPerSec * 0.4) + (getCurGyro() * 0.6);
+}
+
 int rotationCount = 0;
 
 void sample() {
   updateHistory();
   currentlySpinning = isSpinning();
   if (currentlySpinning) {
+    setSpeed();
     bool revComplete = updateAngleEstimate();
     if (revComplete) {
       rotationCount += 1;
@@ -260,6 +269,7 @@ void sample() {
     }
   } else {
     resetRevTracker();
+    curDegPerSec = -1;
   }
 }
 

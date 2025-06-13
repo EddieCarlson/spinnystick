@@ -37,38 +37,44 @@ void setup() {
   // delay(15000);
   Serial.println("started");
   // setAll(CRGB(20,0,0));
-  setAll(CRGB(0,0,0));
-  displayCurImageRay();
+  setTop(CRGB(0,0,30));
+  // setAll(CRGB(0,0,0));
+  // displayCurImageRay();
   ee = micros();
 }
 
 unsigned long lastLoopPrint = micros();
 unsigned long lastZZ = micros();
 
+unsigned long sampleIntervalMicros = 10000;
+unsigned long lastSampleTimestamp = 0;
 
 void loop() {
-  unsigned long start = micros();
+  // unsigned long start = micros();
   // checkButtonsNext();
   // Serial.println("presample");
-  bool oldCurrentSpin = currentlySpinning;
-  sample();
-  unsigned long duration = micros() - start;
+  unsigned long curMicros = micros();
+  if (curMicros - lastSampleTimestamp > sampleIntervalMicros) {
+    sample();
+    lastSampleTimestamp = curMicros;
+  }
+  displayCurImageRay();
   // Serial.println(duration);
   // updateIMU();
   // Serial.println("postsample");
   // if (currentlySpinning) {
-  //   setAll(CRGB(20,0,0));
+    // setAll(CRGB(20,0,0));
   //   displayCurImageRay();
   // } else {
   //   setAll(CRGB(0,0,0));
   //   displayCurImageRay();
   // }
 
-  if (oldCurrentSpin && !currentlySpinning) {
-    sensorLog.flush();
-    sensorLog.close();
-    delay(3000);
-  }
+  // if (oldCurrentSpin && !currentlySpinning) {
+  //   sensorLog.flush();
+  //   sensorLog.close();
+  //   delay(3000);
+  // }
 
   // Serial.println("preprint");
 
@@ -79,7 +85,7 @@ void loop() {
   //   displayCurImageRay();
   // }
   // unsigned long duration2 = micros() - start;
-  while (micros() - start < 8000) { ; }
+  // while (micros() - start < 8000) { ; }
 
   // displayCardioids();
 }
