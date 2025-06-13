@@ -26,8 +26,9 @@ File sensorLog;
 
 int historyCurIndex = 0;
 int revTrackingStartIndex = 0;
-double curAngleEstimate = -1;
-double curAngleEstimatePadMod = -1;
+double curAngleEstimate = 0;
+double curAngleEstimatePadMod = 0;
+double curAngleEstimateUnmodded = 0;
 int upIndex = 0;
 int upTimestamp = 0;
 bool newUpIndex = false;
@@ -66,7 +67,7 @@ void calibrateIMU() {
 }
 
 void initIMU() {
-  sensorLog = SD.open("sensor_log_6000_4.txt", FILE_WRITE);
+  sensorLog = SD.open("sensor_log_angle_estimate.txt", FILE_WRITE);
   sensorLog.println("sensorLog opened");
   Wire2.begin();
   Wire2.setSDA(I2C_SDA);
@@ -105,8 +106,8 @@ double getCurGyro() { return getGyro(0); }
 double getAccel(int anyIndex) { return accelHistory[boundedHistoryIndex(anyIndex)]; }
 double getCurAccel(int offset) { return getAccel(historyCurIndex + offset); }
 
-double getTimestamp(int anyIndex) { return timestamps[boundedHistoryIndex(anyIndex)]; }
-double getCurTimestamp(int offset) { return getTimestamp(historyCurIndex + offset); }
+unsigned long getTimestamp(int anyIndex) { return timestamps[boundedHistoryIndex(anyIndex)]; }
+unsigned long getCurTimestamp(int offset) { return getTimestamp(historyCurIndex + offset); }
 
 unsigned long microsBetween(int startIndex, int endIndex) {
   return timestamps[boundedHistoryIndex(endIndex)] - timestamps[boundedHistoryIndex(startIndex)];
@@ -116,32 +117,43 @@ unsigned long timeSince(int offset) {
   return timestamps[historyCurIndex] - timestamps[getCurTimestamp(offset)];
 }
 
-void updateHistory() {
-  historyCurIndex = (historyCurIndex + 1) % historySize;
-
-  unsigned long startMicros = micros();
-  IMU.update();
-  IMU.getAccel(&accelData);
-  IMU.getGyro(&gyroData);
-  unsigned long updateMicros = floor((micros() * 0.3) + (startMicros * 0.7));
-  timestamps[historyCurIndex] = updateMicros;
-
-  accelHistory[historyCurIndex] = accelData.accY;
-  double gyroZX = pow(pow(gyroData.gyroZ, 2) + pow(gyroData.gyroX, 2), 0.5);
-  gyroHistory[historyCurIndex] = gyroZX;
-
-  // smoothedAccelHistory[i] will equal: weights [0.08, 0.12, 0.6, 0.12, 0.08] * raw accel values centered on curHistoryIndex
-  // smoothedAccelHistory[i] will only be complete once the curHistoryIndex = i + 2
-  double smoothedInit = (accelData.accY * 0.6) + (accelAt(historyCurIndex - 1) * 0.12) + (accelAt(historyCurIndex - 2) * 0.08);
+// smoothedAccelHistory[i] will equal: weights [0.08, 0.12, 0.6, 0.12, 0.08] * raw accel values centered on curHistoryIndex
+// smoothedAccelHistory[i] will only be complete once the curHistoryIndex = i + 2
+void setSmoothedAccel() {
+  double smoothedInit = (accelData.accelY * 0.6) + (getAccel(historyCurIndex - 1) * 0.12) + (getAccel(historyCurIndex - 2) * 0.08);
   smoothedAccelHistory[historyCurIndex] = smoothedInit;
-  smoothedAccelHistory[boundedHistoryIndex(historyCurIndex - 1)] += accelData.accY * 0.12;
-  smoothedAccelHistory[boundedHistoryIndex(historyCurIndex - 2)] += accelData.accY * 0.08;
+  smoothedAccelHistory[boundedHistoryIndex(historyCurIndex - 1)] += accelData.accelY * 0.12;
+  smoothedAccelHistory[boundedHistoryIndex(historyCurIndex - 2)] += accelData.accelY * 0.08;
+}
 
+void clearUpcoming() {
   int threeAhead = boundedHistoryIndex(historyCurIndex + 3);
   gyroHistory[threeAhead] = 0;
   accelHistory[threeAhead] = 0;
   smoothedAccelHistory[threeAhead] = 0;
   timestamps[threeAhead] = 0;
+}
+
+unsigned long updateIMU() {
+  unsigned long startMicros = micros();
+  IMU.update();
+  IMU.getAccel(&accelData);
+  IMU.getGyro(&gyroData);
+  return floor((micros() * 0.3) + (startMicros * 0.7));
+}
+
+void updateHistory() {
+  historyCurIndex = (historyCurIndex + 1) % historySize;
+
+  unsigned long updateMicros = updateIMU();
+  timestamps[historyCurIndex] = updateMicros;
+
+  accelHistory[historyCurIndex] = abs(accelData.accelY);
+  double gyroZX = pow(pow(gyroData.gyroZ, 2) + pow(gyroData.gyroX, 2), 0.5);
+  gyroHistory[historyCurIndex] = gyroZX;
+
+  setSmoothedAccel();
+  clearUpcoming();
 }
 
 bool isSpinning() {
@@ -167,6 +179,7 @@ void resetRevTracker() {
   revTrackingStartIndex = historyCurIndex;
   firstRev = true;
   curAngleEstimate = 0;
+  curAngleEstimatePadMod = 0;
 }
 
 int upIndexInLastRev() {
@@ -197,11 +210,12 @@ int successiveLargeDiscrepancies = 0;
 
 double updateAngleEstimate() {
   double degTraveled = degreesTraveledForIndex(historyCurIndex);
+  curAngleEstimateUnmodded += degTraveled;
   curAngleEstimate += degTraveled;
-  curAngleEstimate = curAngleEstimate % 360;
+  curAngleEstimate = fmod(curAngleEstimate, 360);
   double oldEstimate = curAngleEstimatePadMod;
   curAngleEstimatePadMod += degTraveled;
-  curAngleEstimatePadMod = curAngleEstimatePadMod % 400;
+  curAngleEstimatePadMod = fmod(curAngleEstimatePadMod, 400);
   // include padding so we don't end just before the peak
   bool revComplete = curAngleEstimatePadMod < oldEstimate;
   if (revComplete) {
@@ -214,7 +228,7 @@ double updateAngleEstimate() {
       successiveLargeDiscrepancies = 0;
       curAngleEstimate = estimatedFromUp;
     }
-    curAngleEstimateUnmodded = curAngleEstimate;
+    curAngleEstimatePadMod = curAngleEstimate;
     firstRev = false;
   }
   return revComplete;
@@ -224,11 +238,11 @@ void sample() {
   updateHistory();
   currentlySpinning = isSpinning();
   if (currentlySpinning) {
-    bool revComplete = updateAngleEstimate(revComplete);
+    bool revComplete = updateAngleEstimate();
     if (revComplete) {
       upIndex = upIndexInLastRev();
       upTimestamp = timestamps[upIndex];
-      // don't bother including the first chunk of elems after up index for next upIndex
+      // don't bother including the first chunk of elems after last up index for considering next upIndex
       revTrackingStartIndex = boundedHistoryIndex(upIndex + floor(historySize * 0.15));
     }
   } else {
@@ -240,23 +254,27 @@ void sample() {
 
 
 void printStuff() {
-  loopCount++;
-  unsigned long start = micros();
-  IMU.update();
-  IMU.getAccel(&accelData);
-  IMU.getGyro(&gyroData);
-  unsigned long microdiff = micros() - start;
-  sensorLog.print(start);
-  sensorLog.print("|");
-  sensorLog.print(accelData.accelX);
-  sensorLog.print("|");
-  sensorLog.print(accelData.accelY);
-  sensorLog.print("|");
-  sensorLog.print(accelData.accelZ);
-  sensorLog.print("|");
-  sensorLog.print(gyroData.gyroX);
-  sensorLog.print("|");
-  sensorLog.print(gyroData.gyroY);
-  sensorLog.print("|");
-  sensorLog.println(gyroData.gyroZ);
+  if (currentlySpinning) {
+    sensorLog.print(getCurTimestamp(0));
+    sensorLog.print("|");
+    sensorLog.print(timeSince(-1));
+    sensorLog.print("|");
+    sensorLog.print(curAngleEstimate);
+    sensorLog.print("|");
+    sensorLog.print(curAngleEstimateUnmodded);
+    sensorLog.print("|");
+    sensorLog.print(accelData.accelX);
+    sensorLog.print("|");
+    sensorLog.print(accelData.accelY);
+    sensorLog.print("|");
+    sensorLog.print(accelData.accelZ);
+    sensorLog.print("|");
+    sensorLog.print(gyroData.gyroX);
+    sensorLog.print("|");
+    sensorLog.print(gyroData.gyroY);
+    sensorLog.print("|");
+    sensorLog.println(gyroData.gyroZ);
+  } else {
+    sensorLog.flush();
+  }
 }

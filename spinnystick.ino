@@ -47,36 +47,13 @@ unsigned long lastZZ = micros();
 void loop() {
   unsigned long start = micros();
   // checkButtonsNext();
+  sample();
   printStuff();
   // if (imageInitialized) {
   //   displayCurImageRay();
   // }
   // unsigned long duration2 = micros() - start;
-  while (micros() - start < 6000) { ; }
-  // orient();
-  // if (orientUp) {
-  //   setAll(CRGB(0,0,50));
-  //   displayCurImageRay();
-  // } else if (orientDown) {
-  //   setAll(CRGB(50,0,0));
-  //   displayCurImageRay();
-  // } else {
-  //   setAll(CRGB(0,0,0));
-  //   displayCurImageRay();
-  // }
-  if (micros() - ee > 20000000) {
-    stopRecording();
-    Serial.println("stopped");
-    setAll(CRGB(0,20,0));
-    displayCurImageRay();
-    for (;;) { delay(100); };
-  }
-  // if (micros() - lastLoopPrint > 2000000) {
-  //   Serial.println("loop");
-  //   Serial.print("display ray image micros: ");
-  //   Serial.println(duration2);
-  //   lastLoopPrint = micros();
-  // }
+  while (micros() - start < 5000) { ; }
 
   // displayCardioids();
 }
