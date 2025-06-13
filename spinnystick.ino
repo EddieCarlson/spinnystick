@@ -61,18 +61,21 @@ void loop() {
   //   setAll(CRGB(0,0,0));
   //   displayCurImageRay();
   // }
-  if (oldCurrentSpin != currentlySpinning) {
-    Serial.print("spin changed to: ");
-    Serial.println(currentlySpinning);
+
+  if (oldCurrentSpin && !currentlySpinning) {
+    sensorLog.flush();
+    sensorLog.close();
+    delay(3000);
   }
+
   // Serial.println("preprint");
   printStuff();
-  Serial.println("");
+  // Serial.println("");
   // if (imageInitialized) {
   //   displayCurImageRay();
   // }
   // unsigned long duration2 = micros() - start;
-  while (micros() - start < 100000) { ; }
+  while (micros() - start < 8000) { ; }
 
   // displayCardioids();
 }

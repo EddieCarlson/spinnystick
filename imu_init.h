@@ -34,7 +34,6 @@ int upTimestamp = 0;
 bool newUpIndex = false;
 bool currentlySpinning = false;
 bool firstRev = true;
-bool justRevolved = false;
 
 const double minDegreesPerSec = 600;
 
@@ -78,8 +77,8 @@ void clearHistories() {
 }
 
 void initIMU() {
-  sensorLog = SD.open("sensor_log_angle_estimate_2.txt", FILE_WRITE);
-  sensorLog.println("sensorLog opened");
+  sensorLog = SD.open("sensor_log_angle_estimate_7.txt", FILE_WRITE);
+  sensorLog.println("zzzzzz sensorLog opened");
   Wire2.begin();
   Wire2.setSDA(I2C_SDA);
   Wire2.setSCL(I2C_SCL);
@@ -126,11 +125,11 @@ unsigned long getTimestamp(int anyIndex) { return timestamps[boundedHistoryIndex
 unsigned long getCurTimestamp(int offset) { return getTimestamp(historyCurIndex + offset); }
 
 unsigned long microsBetween(int startIndex, int endIndex) {
-  return timestamps[boundedHistoryIndex(endIndex)] - timestamps[boundedHistoryIndex(startIndex)];
+  return getTimestamp(endIndex) - getTimestamp(startIndex);
 }
 
 unsigned long timeSince(int offset) {
-  return timestamps[historyCurIndex] - timestamps[getCurTimestamp(offset)];
+  return microsBetween(historyCurIndex - 1, historyCurIndex);
 }
 
 // smoothedAccelHistory[i] will equal: weights [0.08, 0.12, 0.6, 0.12, 0.08] * raw accel values centered on curHistoryIndex
@@ -189,8 +188,8 @@ bool isSpinning() {
 }
 
 double degreesTraveledForIndex(int start) {
-  double avgZ = (getGyro(start) + getGyro(start - 1)) / 2.0;
-  return avgZ * microsBetween(start, start - 1);
+  double avgZ = (getGyro(start - 1) + getGyro(start)) / 2.0;
+  return avgZ * microsBetween(start - 1, start) / 1000000.0;
 }
 
 void resetRevTracker() {
@@ -252,20 +251,21 @@ double updateAngleEstimate() {
   return revComplete;
 }
 
+int rotationCount = 0;
+
 void sample() {
   updateHistory();
   currentlySpinning = isSpinning();
   if (currentlySpinning) {
     bool revComplete = updateAngleEstimate();
     if (revComplete) {
-      justRevolved = true;
+      rotationCount += 1;
       upIndex = upIndexInLastRev();
       upTimestamp = timestamps[upIndex];
       // don't bother including the first chunk of elems after last up index for considering next upIndex
       revTrackingStartIndex = boundedHistoryIndex(upIndex + floor(historySize * 0.15));
     }
   } else {
-    justRevolved = false;
     resetRevTracker();
   }
 }
@@ -274,52 +274,54 @@ void sample() {
 
 
 void printStuff() {
-  if (true) {
+  if (currentlySpinning) {
     // Serial.print(historyCurIndex);
-    // Serial.print("hi");
-    // Serial.print((long) (getCurTimestamp(0) / 1000));
     // Serial.print("|");
-    // Serial.print((long) (timeSince(-1) / 1000));
+    // Serial.print(getCurTimestamp(0));
+    // Serial.print("|");
+    // Serial.print(timeSince(-1));
     // Serial.print("|");
     // Serial.print(curAngleEstimate);
     // Serial.print("|");
     // Serial.print(curAngleEstimateUnmodded);
     // Serial.print("|");
+    // Serial.print(getCurAccel());
+    // Serial.print("|");
+    // Serial.println(getCurGyro());
+    // Serial.print("|");
     // Serial.print(accelData.accelX);
     // Serial.print("|");
-    Serial.print(getCurAccel());
-    Serial.print("|");
     // Serial.print(accelData.accelZ);
     // Serial.print("|");
     // Serial.print(gyroData.gyroX);
     // Serial.print("|");
     // Serial.print(gyroData.gyroY);
     // Serial.print("|");
-    Serial.println(getCurGyro());
-    // Serial.print("|");
     // Serial.print(justRevolved);
-    // sensorLog.print((long) (getCurTimestamp(0) / 1000));
-    // sensorLog.print("|");
-    // sensorLog.print((long) (timeSince(-1) / 1000));
-    // sensorLog.print("|");
-    // sensorLog.print(curAngleEstimate);
-    // sensorLog.print("|");
-    // sensorLog.print(curAngleEstimateUnmodded);
-    // sensorLog.print("|");
-    // sensorLog.print(accelData.accelX);
-    // sensorLog.print("|");
-    // sensorLog.print(accelData.accelY);
-    // sensorLog.print("|");
-    // sensorLog.print(accelData.accelZ);
-    // sensorLog.print("|");
-    // sensorLog.print(gyroData.gyroX);
-    // sensorLog.print("|");
-    // sensorLog.print(gyroData.gyroY);
-    // sensorLog.print("|");
-    // sensorLog.println(gyroData.gyroZ);
-    // sensorLog.print("|");
-    // sensorLog.print(justRevolved);
-  } else {
-    // sensorLog.flush();
+    sensorLog.print(getCurTimestamp(0));
+    sensorLog.print("|");
+    sensorLog.print(timeSince(-1));
+    sensorLog.print("|");
+    sensorLog.print(curAngleEstimate);
+    sensorLog.print("|");
+    sensorLog.print(curAngleEstimateUnmodded);
+    sensorLog.print("|");
+    sensorLog.print(getCurGyro());
+    sensorLog.print("|");
+    sensorLog.print(getCurAccel());
+    sensorLog.print("|");
+    sensorLog.print(accelData.accelX);
+    sensorLog.print("|");
+    sensorLog.print(accelData.accelY);
+    sensorLog.print("|");
+    sensorLog.print(accelData.accelZ);
+    sensorLog.print("|");
+    sensorLog.print(gyroData.gyroX);
+    sensorLog.print("|");
+    sensorLog.print(gyroData.gyroY);
+    sensorLog.print("|");
+    sensorLog.print(gyroData.gyroZ);
+    sensorLog.print("|");
+    sensorLog.println(rotationCount);
   }
 }
