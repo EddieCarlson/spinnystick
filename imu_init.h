@@ -138,11 +138,11 @@ void setSmoothedAccel() {
 }
 
 void clearUpcoming() {
-  int nextIndex = boundedHistoryIndex(historyCurIndex + 1);
-  gyroHistory[nextIndex] = 0;
-  accelHistory[nextIndex] = 0;
-  smoothedAccelHistory[nextIndex] = 0;
-  timestamps[nextIndex] = 0;
+  int twoAhead = boundedHistoryIndex(historyCurIndex + 2);
+  gyroHistory[twoAhead] = 0;
+  accelHistory[twoAhead] = 0;
+  smoothedAccelHistory[twoAhead] = 0;
+  timestamps[twoAhead] = 0;
 }
 
 unsigned long updateIMU() {
