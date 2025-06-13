@@ -29,13 +29,15 @@ void setup() {
   initSD(readSerial);
   // addSquares();
   initIMU();
+  // calibrateIMU();
   initSPI();
   initButtons();
   setNextBrightness();
   setNextPeriod();
   // delay(15000);
   Serial.println("started");
-  setAll(CRGB(20,0,0));
+  // setAll(CRGB(20,0,0));
+  setAll(CRGB(0,0,0));
   displayCurImageRay();
   ee = micros();
 }
@@ -47,20 +49,30 @@ unsigned long lastZZ = micros();
 void loop() {
   unsigned long start = micros();
   // checkButtonsNext();
+  // Serial.println("presample");
+  bool oldCurrentSpin = currentlySpinning;
   sample();
-  if (currentlySpinning) {
-    setAll(CRGB(20,0,0));
-    displayCurImageRay();
-  } else {
-    setAll(CRGB(0,0,0));
-    displayCurImageRay();
+  // updateIMU();
+  // Serial.println("postsample");
+  // if (currentlySpinning) {
+  //   setAll(CRGB(20,0,0));
+  //   displayCurImageRay();
+  // } else {
+  //   setAll(CRGB(0,0,0));
+  //   displayCurImageRay();
+  // }
+  if (oldCurrentSpin != currentlySpinning) {
+    Serial.print("spin changed to: ");
+    Serial.println(currentlySpinning);
   }
+  // Serial.println("preprint");
   printStuff();
+  Serial.println("");
   // if (imageInitialized) {
   //   displayCurImageRay();
   // }
   // unsigned long duration2 = micros() - start;
-  while (micros() - start < 5000) { ; }
+  while (micros() - start < 100000) { ; }
 
   // displayCardioids();
 }
