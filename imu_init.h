@@ -225,7 +225,7 @@ double updateAngleEstimate() {
   curAngleEstimate = fmod(curAngleEstimate, 360);
   double oldEstimate = curAngleEstimatePadMod;
   curAngleEstimatePadMod += degTraveled;
-  curAngleEstimatePadMod = fmod(curAngleEstimatePadMod, 420);
+  curAngleEstimatePadMod = fmod(curAngleEstimatePadMod, 410);
   // include padding so we don't end just before the peak
   bool revComplete = curAngleEstimatePadMod < oldEstimate;
   if (revComplete) {
