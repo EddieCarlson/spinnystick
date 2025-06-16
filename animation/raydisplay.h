@@ -71,18 +71,19 @@ void setTop(CRGB color) {
 }
 
 double gyroAdjustedAngle() {
-  unsigned long upTimestampDiff = (lastUpRayTimestamp - upTimestamp) / 1000000.0;
-  double upDegreeDiff = curDegPerSec * upTimestampDiff;
-  double curDisplayDegrees = lastDisplayAngle + (curDegPerSec * (micros() - lastDisplayTimestamp) / 1000000.0);
-  double curDegreeDiff = curDisplayDegrees - curAngleEstimate;
-  double weightedDegreeDiff = (upDegreeDiff * 0.65) + (curDegreeDiff * 0.35);
-  if (weightedDegreeDiff > 15) {
-    double period = 360.0 / curDegPerSec; // 300 millis
-    double diffForNextDisplay = (weightedDegreeDiff / period) / 3.0;
-    return fmod(curDisplayDegrees + diffForNextDisplay, 360.0);
-  } else {
-    return fmod(curDisplayDegrees, 360.0);
-  }
+  // unsigned long upTimestampDiff = (lastUpRayTimestamp - upTimestamp) / 1000000.0;
+  // double upDegreeDiff = curDegPerSec * upTimestampDiff;
+  // double curDisplayDegrees = lastDisplayAngle + (curDegPerSec * (micros() - lastDisplayTimestamp) / 1000000.0);
+  // double curDegreeDiff = curDisplayDegrees - curAngleEstimate;
+  // double weightedDegreeDiff = (upDegreeDiff * 0.65) + (curDegreeDiff * 0.35);
+  // if (weightedDegreeDiff > 15) {
+  //   double period = 360.0 / curDegPerSec; // 300 millis
+  //   double diffForNextDisplay = (weightedDegreeDiff / period) / 3.0;
+  //   return fmod(curDisplayDegrees + diffForNextDisplay, 360.0);
+  // } else {
+  //   return fmod(curDisplayDegrees, 360.0);
+  // }
+  return curAngleEstimate;
 }
 
 void calculate_current_ray() {

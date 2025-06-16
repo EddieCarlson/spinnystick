@@ -19,7 +19,7 @@ calData calib = { 0 };  //Calibration data
 AccelData accelData;    //Sensor data
 GyroData gyroData;
 
-const int historySize = 60;
+const int historySize = 150;
 int historyCurIndex = 0;
 int revTrackingStartIndex = 0;
 double curAngleEstimate = 0;
@@ -118,6 +118,10 @@ double getAccel(int anyIndex) { return accelHistory[boundedHistoryIndex(anyIndex
 double getCurAccel(int offset) { return getAccel(historyCurIndex + offset); }
 double getCurAccel() { return getCurAccel(0); }
 
+double getSmoothedAccel(int anyIndex) { return smoothedAccelHistory[boundedHistoryIndex(anyIndex)]; }
+double getCurSmoothedAccel(int offset) { return getAccel(historyCurIndex + offset); }
+double getCurSmoothedAccel() { return getCurAccel(0); }
+
 unsigned long getTimestamp(int anyIndex) { return timestamps[boundedHistoryIndex(anyIndex)]; }
 unsigned long getCurTimestamp(int offset) { return getTimestamp(historyCurIndex + offset); }
 
@@ -195,13 +199,21 @@ void resetRevTracker() {
 }
 
 int upIndexInLastRev() {
-  double largestSmoothed = 0;
-  int largestSmoothedIndex = revTrackingStartIndex;
-  for (int i = revTrackingStartIndex; i != boundedHistoryIndex(historyCurIndex - 2); i = (i + 1) % historySize) {
+  int upCount = 0;
+  int downCount = 0;
+  double largestSmoothed = getSmoothedAccel(historyCurIndex - 2);
+  int largestSmoothedIndex = boundedHistoryIndex(historyCurIndex - 2);
+  for (int i = boundedHistoryIndex(historyCurIndex - 3); i != revTrackingStartIndex - 1; i = boundedHistoryIndex(i - 1)) {
     double smoothed = smoothedAccelHistory[i];
     if (smoothed > largestSmoothed) {
+      upCount += 1;
       largestSmoothed = smoothed;
       largestSmoothedIndex = i;
+    } else if (upCount > 3) { // we want to go up and then down (to find a local maximum)
+      downCount += 1;
+    }
+    if (downCount > 3) {
+      break;
     }
   }
 
@@ -211,7 +223,7 @@ int upIndexInLastRev() {
 double estimateAngleFromLastUp() {
   // obob?
   double estimate = 0;
-  for (int i = upIndex; i != boundedHistoryIndex(historyCurIndex + 1); i = (i + 1) % 60) {
+  for (int i = upIndex; i != boundedHistoryIndex(historyCurIndex + 1); i = boundedHistoryIndex(i + 1)) {
     estimate += degreesTraveledForIndex(i);
   }
   return estimate;
@@ -226,19 +238,20 @@ double updateAngleEstimate() {
   curAngleEstimate = fmod(curAngleEstimate, 360);
   double oldEstimate = curAngleEstimatePadMod;
   curAngleEstimatePadMod += degTraveled;
-  curAngleEstimatePadMod = fmod(curAngleEstimatePadMod, 410);
+  curAngleEstimatePadMod = fmod(curAngleEstimatePadMod, 380);
   // include padding so we don't end just before the peak
   bool revComplete = curAngleEstimatePadMod < oldEstimate;
   if (revComplete) {
     double estimatedFromUp = estimateAngleFromLastUp();
-    bool largeDiscrepancy = !firstRev &&
-      (abs(curAngleEstimate - estimatedFromUp) > (42 + (successiveLargeDiscrepancies * 36)));
-    if (largeDiscrepancy) {
-      successiveLargeDiscrepancies += 1;
-    } else {
-      successiveLargeDiscrepancies = 0;
-      curAngleEstimate = estimatedFromUp;
-    }
+    // bool largeDiscrepancy = !firstRev &&
+    //   (abs(curAngleEstimate - estimatedFromUp) > (42 + (successiveLargeDiscrepancies * 36)));
+    // if (largeDiscrepancy) {
+    //   successiveLargeDiscrepancies += 1;
+    // } else {
+    //   successiveLargeDiscrepancies = 0;
+    //   curAngleEstimate = estimatedFromUp;
+    // }
+    curAngleEstimate = estimatedFromUp;
     curAngleEstimatePadMod = curAngleEstimate;
     firstRev = false;
   }
@@ -265,7 +278,7 @@ void sample() {
       upIndex = upIndexInLastRev();
       upTimestamp = timestamps[upIndex];
       // don't include the first chunk of elems after last up index for considering next upIndex
-      revTrackingStartIndex = boundedHistoryIndex(upIndex + floor(historySize * 0.15));
+      revTrackingStartIndex = boundedHistoryIndex(upIndex);
     }
   } else {
     resetRevTracker();

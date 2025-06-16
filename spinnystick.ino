@@ -46,7 +46,7 @@ void setup() {
 unsigned long lastLoopPrint = micros();
 unsigned long lastZZ = micros();
 
-unsigned long sampleIntervalMicros = 10000;
+unsigned long sampleIntervalMicros = 5000;
 unsigned long lastSampleTimestamp = 0;
 
 void loop() {
