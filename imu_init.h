@@ -192,15 +192,20 @@ int accumulatingDiscrepancies = 0;
 bool spinningToRight = true;
 double discrepancyPerDegree = 0;
 
-double degreesTraveledForIndex(int start) {
-  double avgZ = (getGyro(start - 1) + getGyro(start)) / 2.0;
-  double degrees = (avgZ * microsBetween(start - 1, start) / 1000000.0);
-  double discrepancyAdjustment = degrees * discrepancyPerDegree;
-  degrees += discrepancyAdjustment;
+
+double addDiscrepancyAndDirection(double absDegrees) {
+  double discrepancyAdjustment = absDegrees * discrepancyPerDegree;
+  double degrees = absDegrees + discrepancyAdjustment;
   if (!spinningToRight) {
     degrees = -1 * degrees;
   }
   return degrees;
+}
+
+double degreesTraveledForIndex(int start) {
+  double avgZ = (getGyro(start - 1) + getGyro(start)) / 2.0;
+  double degrees = (avgZ * microsBetween(start - 1, start) / 1000000.0);
+  return addDiscrepancyAndDirection(degrees);
 }
 
 void resetRevTracker() {
@@ -239,6 +244,13 @@ double estimateAngleFromLastUp() {
     estimate += degreesTraveledForIndex(i);
   }
   return estimate;
+}
+
+double getCurAngle() {
+  unsigned long microsElapsed = micros() - getCurTimestamp(0);
+  double degrees = ((double) microsElapsed) * getCurGyro() / 1000000.0;
+  double adjustedAngle = curAngleEstimate + addDiscrepancyAndDirection(degrees);
+  return fmod(360 + adjustedAngle, 360);
 }
 
 int previouslyRight = 0;
@@ -329,10 +341,10 @@ double updateAngleEstimate() {
 }
 
 void setSpeed() {
-  if (curDegPerSec < -0.5) {
+  if (firstRev) {
     curDegPerSec = getCurGyro();
   }
-  curDegPerSec = (curDegPerSec * 0.4) + (getCurGyro() * 0.6);
+  curDegPerSec = (curDegPerSec * 0.08) + (getCurGyro() * 0.92);
 }
 
 int rotationCount = 0;
@@ -352,7 +364,6 @@ void sample() {
     }
   } else {
     resetRevTracker();
-    curDegPerSec = -1;
     compensationFactor = 3.5;
   }
 }

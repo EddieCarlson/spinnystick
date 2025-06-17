@@ -40,9 +40,9 @@ g_channel = [[g for _, g, _ in row] for row in rgb_img]
 b_channel = [[b for _, _, b in row] for row in rgb_img]
 
 
-num_rays = 360 * 4 # 1/3 degrees between each ray
+num_rays = 360 * 3 # 1/3 degrees between each ray
 num_pixels = 97
-rope_pixels = 25 # number of pixels that would fit between pixel 0 on the rod and the center of spinning
+rope_pixels = 22 # number of pixels that would fit between pixel 0 on the rod and the center of spinning
 center_px = num_pixels + rope_pixels
 scale_factor = square_image.size[0] / (center_px * 2.0)
 

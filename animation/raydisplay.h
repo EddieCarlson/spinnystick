@@ -83,7 +83,7 @@ double gyroAdjustedAngle() {
   // } else {
   //   return fmod(curDisplayDegrees, 360.0);
   // }
-  return curAngleEstimate;
+  return fmod(180 + getCurAngle(), 360);
 }
 
 void calculate_current_ray() {

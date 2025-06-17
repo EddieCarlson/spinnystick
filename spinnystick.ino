@@ -26,7 +26,7 @@ void setup() {
   while(!Serial && (millis() - start < 2000)) { ; }
   Serial.println("hi");
 
-  // initSD(readSerial);
+  initSD(readSerial);
   // addSquares();
   initIMU();
   // calibrateIMU();
@@ -37,7 +37,7 @@ void setup() {
   // delay(15000);
   Serial.println("started");
   // setAll(CRGB(20,0,0));
-  setTop(CRGB(0,0,25));
+  // setTop(CRGB(0,0,25));
   // setAll(CRGB(0,0,0));
   // displayCurImageRay();
   ee = micros();
@@ -46,7 +46,7 @@ void setup() {
 unsigned long lastLoopPrint = micros();
 unsigned long lastZZ = micros();
 
-unsigned long sampleIntervalMicros = 5000;
+unsigned long sampleIntervalMicros = 7000;
 unsigned long lastSampleTimestamp = 0;
 
 void loop() {
