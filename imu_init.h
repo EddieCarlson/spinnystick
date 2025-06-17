@@ -186,9 +186,21 @@ bool isSpinning() {
   }
 }
 
+int successiveLargeDiscrepancies = 0;
+double lastDiscrepancy = 0;
+int accumulatingDiscrepancies = 0;
+bool spinningToRight = true;
+double discrepancyPerDegree = 0;
+
 double degreesTraveledForIndex(int start) {
   double avgZ = (getGyro(start - 1) + getGyro(start)) / 2.0;
-  return avgZ * microsBetween(start - 1, start) / 1000000.0;
+  double degrees = (avgZ * microsBetween(start - 1, start) / 1000000.0);
+  double discrepancyAdjustment = degrees * discrepancyPerDegree;
+  degrees += discrepancyAdjustment;
+  if (!spinningToRight) {
+    degrees = -1 * degrees;
+  }
+  return degrees;
 }
 
 void resetRevTracker() {
@@ -229,29 +241,69 @@ double estimateAngleFromLastUp() {
   return estimate;
 }
 
-int successiveLargeDiscrepancies = 0;
+int previouslyRight = 0;
 
 double updateAngleEstimate() {
   double degTraveled = degreesTraveledForIndex(historyCurIndex);
   curAngleEstimateUnmodded += degTraveled;
   curAngleEstimate += degTraveled;
-  curAngleEstimate = fmod(curAngleEstimate, 360);
+  curAngleEstimate = fmod(curAngleEstimate + 360, 360);
   double oldEstimate = curAngleEstimatePadMod;
   curAngleEstimatePadMod += degTraveled;
-  curAngleEstimatePadMod = fmod(curAngleEstimatePadMod, 380);
+  curAngleEstimatePadMod = fmod(curAngleEstimatePadMod + 380, 380);
   // include padding so we don't end just before the peak
   bool revComplete = curAngleEstimatePadMod < oldEstimate;
   if (revComplete) {
-    double estimatedFromUp = estimateAngleFromLastUp();
+    double estimatedFromUp = fmod(estimateAngleFromLastUp() + 360, 360);
+    bool curAngleLeftOfUp = curAngleEstimate > 180;
+    bool estimatedFromUpLeftOfUp = estimatedFromUp > 180;
+    double diff = 0; // positive value means FromUp calculation is "ahead" of gyro int in dir of rotation
+    if (curAngleLeftOfUp && estimatedFromUpLeftOfUp) {
+      diff = estimatedFromUp - curAngleEstimate;
+    } else if (curAngleLeftOfUp && !estimatedFromUpLeftOfUp) {
+      diff = (360 - curAngleEstimate) + estimatedFromUp;
+    } else if (!curAngleLeftOfUp && estimatedFromUpLeftOfUp) {
+      diff = -1.0 * ((360 - estimatedFromUp) + curAngleEstimate);
+    } else {
+      diff = estimatedFromUp - curAngleEstimate;
+    }
+    diff = min(max(diff, -60.0), 60.0);
+    if (abs(diff) > lastDiscrepancy) {
+      successiveLargeDiscrepancies += 1;
+    } else {
+      successiveLargeDiscrepancies = 0;
+    }
+    if (successiveLargeDiscrepancies > 2) {
+      spinningToRight = !spinningToRight;
+    }
+
+    // if (previouslyRight == goingRight && abs(diff) > abs(lastDiscrepancy)) {
+    //   accumulatingDiscrepancies += 1;
+    // } else {
+    //   accumulatingDiscrepancies = 0;
+    // }
+    // previouslyRight = goingRight;
+    // lastDiscrepancy = diff;
+    // if (accumulatingDiscrepancies > 2) {
+    //   spinningToRight = !spinningToRight;
+    // }
+    // bool largeDiscrepancy = false;
+    // bool largeDiscrepancy = !firstRev &&
+    //   (positiveDiscrepancy > (36 + (successiveLargeDiscrepancies * 36)));
     // bool largeDiscrepancy = !firstRev &&
     //   (abs(curAngleEstimate - estimatedFromUp) > (42 + (successiveLargeDiscrepancies * 36)));
     // if (largeDiscrepancy) {
     //   successiveLargeDiscrepancies += 1;
     // } else {
+    //   discrepancyPerDegree = min(max(discrepancy / (360.0 * 3), -0.33), 0.33);
     //   successiveLargeDiscrepancies = 0;
     //   curAngleEstimate = estimatedFromUp;
     // }
-    curAngleEstimate = estimatedFromUp;
+    discrepancyPerDegree = diff / (360.0 * 4.5);
+    successiveLargeDiscrepancies = 0;
+    // curAngleEstimate = estimatedFromUp;
+
+    // curAngleEstimate = estimatedFromUp;
     curAngleEstimatePadMod = curAngleEstimate;
     firstRev = false;
   }
