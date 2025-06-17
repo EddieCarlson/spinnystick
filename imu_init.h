@@ -243,6 +243,7 @@ double estimateAngleFromLastUp() {
 
 int previouslyRight = 0;
 double compensationFactor = 3.5;
+double smoothedDiff = 0;
 
 double updateAngleEstimate() {
   double degTraveled = degreesTraveledForIndex(historyCurIndex);
@@ -279,11 +280,20 @@ double updateAngleEstimate() {
 
 
     diff = min(max(diff, -60.0), 60.0);
-    if (abs(diff) < 36 && compensationFactor < 7) {
-      compensationFactor += (50 - abs(diff)) / 360;
-    } else if (abs(diff) > 40 && compensationFactor > 3) {
-      compensationFactor -= max(abs(diff) / 50, 0.2);
+    if (firstRev) {
+      smoothedDiff = diff;
+    } else {
+      smoothedDiff = (smoothedDiff * 0.1) + (smoothedDiff * 0.9);
     }
+    double absDiff = abs(smoothedDiff);
+    if (absDiff < 20 && compensationFactor < 7.5) {
+      compensationFactor += max(1.5 / absDiff, 0.15);
+      // compensationFactor = compensationFactor * (((30 - absDiff) / 30) * 1.08);
+    } else if (absDiff > 36 && compensationFactor > 3) {
+      compensationFactor -= max((absDiff - 5) / (25 * 10), 0.22);
+      // compensationFactor = compensationFactor / (max((absDiff - 10) / 48, 1) * 1.08);
+    }
+    compensationFactor = max(min(compensationFactor, 7.6), 2.9);
 
     // if (previouslyRight == goingRight && abs(diff) > abs(lastDiscrepancy)) {
     //   accumulatingDiscrepancies += 1;
