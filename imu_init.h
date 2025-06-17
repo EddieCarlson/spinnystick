@@ -286,11 +286,11 @@ double updateAngleEstimate() {
       smoothedDiff = (smoothedDiff * 0.1) + (smoothedDiff * 0.9);
     }
     double absDiff = abs(smoothedDiff);
-    if (absDiff < 20 && compensationFactor < 7.5) {
-      compensationFactor += max(1.5 / absDiff, 0.15);
+    if (absDiff < 30 && compensationFactor < 7.5) {
+      compensationFactor += max(1.5 / absDiff, 0.15); // diff of 10 or less: 0.15, diff of 30 = 0.05
       // compensationFactor = compensationFactor * (((30 - absDiff) / 30) * 1.08);
     } else if (absDiff > 36 && compensationFactor > 3) {
-      compensationFactor -= max((absDiff - 5) / (25 * 10), 0.22);
+      compensationFactor -= max((absDiff / 270) - 0.045, 0.2); // diff of 36 = .08, diff of 60+ = 0.17
       // compensationFactor = compensationFactor / (max((absDiff - 10) / 48, 1) * 1.08);
     }
     compensationFactor = max(min(compensationFactor, 7.6), 2.9);
