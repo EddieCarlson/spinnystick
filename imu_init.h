@@ -242,6 +242,7 @@ double estimateAngleFromLastUp() {
 }
 
 int previouslyRight = 0;
+double compensationFactor = 3.5;
 
 double updateAngleEstimate() {
   double degTraveled = degreesTraveledForIndex(historyCurIndex);
@@ -267,7 +268,6 @@ double updateAngleEstimate() {
     } else {
       diff = estimatedFromUp - curAngleEstimate;
     }
-    diff = min(max(diff, -60.0), 60.0);
     if (abs(diff) > lastDiscrepancy) {
       successiveLargeDiscrepancies += 1;
     } else {
@@ -275,6 +275,14 @@ double updateAngleEstimate() {
     }
     if (successiveLargeDiscrepancies > 2) {
       spinningToRight = !spinningToRight;
+    }
+
+
+    diff = min(max(diff, -60.0), 60.0);
+    if (abs(diff) < 36 && compensationFactor < 7) {
+      compensationFactor += (50 - abs(diff)) / 360;
+    } else if (abs(diff) > 40 && compensationFactor > 3) {
+      compensationFactor -= max(abs(diff) / 50, 0.2);
     }
 
     // if (previouslyRight == goingRight && abs(diff) > abs(lastDiscrepancy)) {
@@ -299,7 +307,7 @@ double updateAngleEstimate() {
     //   successiveLargeDiscrepancies = 0;
     //   curAngleEstimate = estimatedFromUp;
     // }
-    discrepancyPerDegree = diff / (360.0 * 4.5);
+    discrepancyPerDegree = diff / (360.0 * compensationFactor);
     successiveLargeDiscrepancies = 0;
     // curAngleEstimate = estimatedFromUp;
 
@@ -335,6 +343,7 @@ void sample() {
   } else {
     resetRevTracker();
     curDegPerSec = -1;
+    compensationFactor = 3.5;
   }
 }
 

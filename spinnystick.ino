@@ -37,7 +37,7 @@ void setup() {
   // delay(15000);
   Serial.println("started");
   // setAll(CRGB(20,0,0));
-  setTop(CRGB(0,0,50));
+  setTop(CRGB(0,0,25));
   // setAll(CRGB(0,0,0));
   // displayCurImageRay();
   ee = micros();
