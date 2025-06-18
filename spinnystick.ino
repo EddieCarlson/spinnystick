@@ -57,8 +57,15 @@ void loop() {
   if (curMicros - lastSampleTimestamp > sampleIntervalMicros) {
     sample();
     lastSampleTimestamp = curMicros;
+    if (currentlySpinning && !previouslySpinning && lastStartSpinningMicros < (lastStoppedSpinningMicros + 2000000)) {
+      importNextImage();
+    }
   }
-  displayCurImageRay();
+  if (currentlySpinning || previouslySpinning) {
+    displayCurImageRay();
+  } else if (getCurGyro() < minDegreesPerSec) {
+    // SLEEP
+  }
   // Serial.println(duration);
   // updateIMU();
   // Serial.println("postsample");

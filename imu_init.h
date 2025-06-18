@@ -30,6 +30,9 @@ unsigned long upTimestamp = 0;
 bool newUpIndex = false;
 bool currentlySpinning = false;
 bool firstRev = true;
+unsigned long lastStoppedSpinningMicros = 0;
+unsigned long lastStartSpinningMicros = 1000000000;
+bool previouslySpinning = false;
 
 const double minDegreesPerSec = 600;
 
@@ -124,6 +127,7 @@ double getCurSmoothedAccel() { return getCurAccel(0); }
 
 unsigned long getTimestamp(int anyIndex) { return timestamps[boundedHistoryIndex(anyIndex)]; }
 unsigned long getCurTimestamp(int offset) { return getTimestamp(historyCurIndex + offset); }
+unsigned long getCurTimestamp() { return getCurTimestamp(0); }
 
 unsigned long microsBetween(int startIndex, int endIndex) {
   return getTimestamp(endIndex) - getTimestamp(startIndex);
@@ -172,17 +176,24 @@ void updateHistory() {
   clearUpcoming();
 }
 
-bool isSpinning() {
-  if (currentlySpinning) {
-    return getCurGyro() > minDegreesPerSec;
+void setSpinning() {
+  previouslySpinning = currentlySpinning;
+  if (previouslySpinning) {
+    currentlySpinning = getCurGyro() > minDegreesPerSec;
   } else {
-    int start = -1 * ((int) floor(historySize * 0.7));
+    int start = -1 * ((int) floor(historySize * 0.3));
+    currentlySpinning = true;
     for (int i = start; i <= 0; i++) {
       if (getCurGyro(i) < minDegreesPerSec) {
-        return false;
+        currentlySpinning = false;
+        break;
       }
     }
-    return true;
+  }
+  if (!previouslySpinning && currentlySpinning) {
+    lastStartSpinningMicros = micros();
+  } else if (previouslySpinning && !currentlySpinning) {
+    lastStoppedSpinningMicros = micros();
   }
 }
 
@@ -351,7 +362,7 @@ int rotationCount = 0;
 
 void sample() {
   updateHistory();
-  currentlySpinning = isSpinning();
+  setSpinning();
   if (currentlySpinning) {
     setSpeed();
     bool revComplete = updateAngleEstimate();

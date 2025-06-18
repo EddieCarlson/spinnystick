@@ -97,13 +97,9 @@ void calculate_current_ray() {
 void displayCurImageRay() { // takes about 290 micros (@ 32MHz)
   // calculateRay(curAngle()); // takes about 30 micros (12% of time - 242)
   if (currentlySpinning) {
-    if (lastUpRayTimestamp == 0) {
-      lastUpRayTimestamp = micros();
-    }
     calculateRay(gyroAdjustedAngle());
-    displayPixels();
   } else {
     clearPixels();
-    displayPixels();
   }
+  displayPixels();
 }
