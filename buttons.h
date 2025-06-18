@@ -64,10 +64,14 @@ ButtonAction buttonActions[4] = {
   ButtonAction(periodButton, prevImagePin, setNextPeriod)
 };
 
-void checkButtonsNext() {
+void updateButtons() {
   for(int i = 0; i < 4; i++) {
     buttonActions[i].update();
   }
+}
+
+void checkButtonsNext() {
+  updateButtons();
   for(int i = 0; i < 4; i++) {
     if (buttonActions[i].actIfPressed()) {
       break;

@@ -32,6 +32,7 @@ bool currentlySpinning = false;
 bool firstRev = true;
 unsigned long lastStoppedSpinningMicros = 0;
 unsigned long lastStartSpinningMicros = 1000000000;
+unsigned long lastSpinningMicros = 0;
 bool previouslySpinning = false;
 
 const double minDegreesPerSec = 600;
@@ -190,10 +191,14 @@ void setSpinning() {
       }
     }
   }
+  unsigned long curMicros = micros();
   if (!previouslySpinning && currentlySpinning) {
-    lastStartSpinningMicros = micros();
+    lastStartSpinningMicros = curMicros;
   } else if (previouslySpinning && !currentlySpinning) {
-    lastStoppedSpinningMicros = micros();
+    lastStoppedSpinningMicros = curMicros;
+  }
+  if (currentlySpinning) {
+    lastSpinningMicros = curMicros;
   }
 }
 

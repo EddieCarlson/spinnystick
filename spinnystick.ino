@@ -1,3 +1,6 @@
+#include <Snooze.h>
+#include <SnoozeBlock.h>
+
 #include <arduino.h>
 #include <SPI.h>
 #include <FastLED.h>
@@ -20,6 +23,9 @@
 
 const bool readSerial = false;
 unsigned long ee = micros();
+SnoozeDigital digital;
+SnoozeBlock config_teensy(digital);
+
 void setup() {
   Serial.begin(9600);
   uint32_t start = millis();
@@ -41,6 +47,10 @@ void setup() {
   // setAll(CRGB(0,0,0));
   // displayCurImageRay();
   ee = micros();
+  digital.pinMode(13, INPUT_PULLUP, FALLING);
+  digital.pinMode(14, INPUT_PULLUP, FALLING);
+  digital.pinMode(15, INPUT_PULLUP, FALLING);
+  digital.pinMode(16, INPUT_PULLUP, FALLING);
 }
 
 unsigned long lastLoopPrint = micros();
@@ -48,52 +58,38 @@ unsigned long lastZZ = micros();
 
 unsigned long sampleIntervalMicros = 7000;
 unsigned long lastSampleTimestamp = 0;
+unsigned long lastSleepMicros = 0;
+bool twoPreviouslySpinning = false;
+
+void sleep() {
+  updateButtons();
+  Serial.println("going to sleep");
+  Serial.flush();
+  delay(500);
+  Snooze.sleep( config_teensy );
+  lastSleepMicros = micros();
+  Serial.println("waking up");
+}
 
 void loop() {
   // unsigned long start = micros();
   // checkButtonsNext();
   // Serial.println("presample");
   unsigned long curMicros = micros();
+  twoPreviouslySpinning = previouslySpinning;
   if (curMicros - lastSampleTimestamp > sampleIntervalMicros) {
     sample();
     lastSampleTimestamp = curMicros;
-    if (currentlySpinning && !previouslySpinning && lastStartSpinningMicros < (lastStoppedSpinningMicros + 2000000)) {
+    bool startedSpinningRecently = lastStartSpinningMicros < (lastStoppedSpinningMicros + 2000000);
+    if (currentlySpinning && !previouslySpinning && startedSpinningRecently) {
       importNextImage();
     }
   }
-  if (currentlySpinning || previouslySpinning) {
+  if (currentlySpinning || previouslySpinning || twoPreviouslySpinning) {
     displayCurImageRay();
-  } else if (getCurGyro() < minDegreesPerSec) {
-    // SLEEP
+  } else if (curMicros - lastSpinningMicros > 5000000 && curMicros - lastSleepMicros > 5000000) {
+    sleep();
   }
-  // Serial.println(duration);
-  // updateIMU();
-  // Serial.println("postsample");
-  // if (currentlySpinning) {
-    // setAll(CRGB(20,0,0));
-  //   displayCurImageRay();
-  // } else {
-  //   setAll(CRGB(0,0,0));
-  //   displayCurImageRay();
-  // }
-
-  // if (oldCurrentSpin && !currentlySpinning) {
-  //   sensorLog.flush();
-  //   sensorLog.close();
-  //   delay(3000);
-  // }
-
-  // Serial.println("preprint");
-
-  // printStuff();
-
-  // Serial.println("");
-  // if (imageInitialized) {
-  //   displayCurImageRay();
-  // }
-  // unsigned long duration2 = micros() - start;
-  // while (micros() - start < 8000) { ; }
-
   // displayCardioids();
 }
 
