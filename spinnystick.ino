@@ -39,13 +39,7 @@ void setup() {
   initSPI();
   initButtons();
   setNextBrightness();
-  setNextPeriod();
-  // delay(15000);
   Serial.println("started");
-  // setAll(CRGB(20,0,0));
-  // setTop(CRGB(0,0,25));
-  // setAll(CRGB(0,0,0));
-  // displayCurImageRay();
   ee = micros();
   digital.pinMode(13, INPUT_PULLUP, FALLING);
   digital.pinMode(14, INPUT_PULLUP, FALLING);
@@ -73,22 +67,22 @@ void sleep() {
 
 void loop() {
   // unsigned long start = micros();
-  // checkButtonsNext();
+  checkButtonsNext();
   // Serial.println("presample");
   unsigned long curMicros = micros();
   twoPreviouslySpinning = previouslySpinning;
   if (curMicros - lastSampleTimestamp > sampleIntervalMicros) {
     sample();
     lastSampleTimestamp = curMicros;
-    bool startedSpinningRecently = lastStartSpinningMicros < (lastStoppedSpinningMicros + 2000000);
-    if (currentlySpinning && !previouslySpinning && startedSpinningRecently) {
+    bool justStartedSpinningAgain = lastStartSpinningMicros < (lastStoppedSpinningMicros + 2000000);
+    if (currentlySpinning && !previouslySpinning && justStartedSpinningAgain) {
       importNextImage();
     }
   }
   if (currentlySpinning || previouslySpinning || twoPreviouslySpinning) {
     displayCurImageRay();
-  } else if (curMicros - lastSpinningMicros > 5000000 && curMicros - lastSleepMicros > 5000000) {
-    sleep();
+  } else if (curMicros - lastSpinningMicros > 50000000 && curMicros - lastSleepMicros > 50000000) {
+    // sleep();
   }
   // displayCardioids();
 }

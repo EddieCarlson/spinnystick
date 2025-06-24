@@ -43,6 +43,7 @@ double smoothedAccelHistory[historySize];
 unsigned long timestamps[historySize];
 
 double curDegPerSec = -1;
+int rotationCount = 0;
 
 void calibrateIMU() {
   delay(3000);
@@ -229,6 +230,7 @@ void resetRevTracker() {
   firstRev = true;
   curAngleEstimate = 0;
   curAngleEstimatePadMod = 0;
+  rotationCount = 0;
 }
 
 int upIndexInLastRev() {
@@ -306,50 +308,34 @@ double updateAngleEstimate() {
       spinningToRight = !spinningToRight;
     }
 
-
-    diff = min(max(diff, -60.0), 60.0);
-    if (firstRev) {
-      smoothedDiff = diff;
-    } else {
-      smoothedDiff = (smoothedDiff * 0.1) + (smoothedDiff * 0.9);
+    double absInitialDiff = abs(diff);
+    if (rotationCount == 1 || rotationCount == 2) {
+      diff = min(max(diff, -60.0), 60.0);
+    } else if (rotationCount > 6) {
+      diff = min(max(diff, -24.0), 24.0);
+    } else if (rotationCount > 2) {
+      diff = min(max(diff, -40.0), 40.0);
     }
-    double absDiff = abs(smoothedDiff);
-    if (absDiff < 30 && compensationFactor < 7.5) {
-      compensationFactor += max(1.5 / absDiff, 0.15); // diff of 10 or less: 0.15, diff of 30 = 0.05
+    if (firstRev) {
+      smoothedDiff = abs(diff);
+    } else {
+      smoothedDiff = (smoothedDiff * 0.08) + (smoothedDiff * 0.92);
+    }
+    double absDiff = abs(diff);
+    if (absInitialDiff < 15 && compensationFactor < 5.8) {
+      compensationFactor = compensationFactor + 0.1;
+      // compensationFactor += max(1.5 / absDiff, 0.12); // diff of 10 or less: 0.15, diff of 30 = 0.05
       // compensationFactor = compensationFactor * (((30 - absDiff) / 30) * 1.08);
-    } else if (absDiff > 36 && compensationFactor > 3) {
-      compensationFactor -= max((absDiff / 270) - 0.045, 0.2); // diff of 36 = .08, diff of 60+ = 0.17
+    } else if (absInitialDiff > 24 && compensationFactor > 3) {
+      compensationFactor = compensationFactor - 0.1;
+      // compensationFactor -= max((absDiff / 270) - 0.045, 0.13); // diff of 36 = .08, diff of 60+ = 0.17
       // compensationFactor = compensationFactor / (max((absDiff - 10) / 48, 1) * 1.08);
     }
-    compensationFactor = max(min(compensationFactor, 7.6), 2.9);
+    compensationFactor = max(min(compensationFactor, 5.8), 3.0);
 
-    // if (previouslyRight == goingRight && abs(diff) > abs(lastDiscrepancy)) {
-    //   accumulatingDiscrepancies += 1;
-    // } else {
-    //   accumulatingDiscrepancies = 0;
-    // }
-    // previouslyRight = goingRight;
-    // lastDiscrepancy = diff;
-    // if (accumulatingDiscrepancies > 2) {
-    //   spinningToRight = !spinningToRight;
-    // }
-    // bool largeDiscrepancy = false;
-    // bool largeDiscrepancy = !firstRev &&
-    //   (positiveDiscrepancy > (36 + (successiveLargeDiscrepancies * 36)));
-    // bool largeDiscrepancy = !firstRev &&
-    //   (abs(curAngleEstimate - estimatedFromUp) > (42 + (successiveLargeDiscrepancies * 36)));
-    // if (largeDiscrepancy) {
-    //   successiveLargeDiscrepancies += 1;
-    // } else {
-    //   discrepancyPerDegree = min(max(discrepancy / (360.0 * 3), -0.33), 0.33);
-    //   successiveLargeDiscrepancies = 0;
-    //   curAngleEstimate = estimatedFromUp;
-    // }
     discrepancyPerDegree = diff / (360.0 * compensationFactor);
     successiveLargeDiscrepancies = 0;
-    // curAngleEstimate = estimatedFromUp;
 
-    // curAngleEstimate = estimatedFromUp;
     curAngleEstimatePadMod = curAngleEstimate;
     firstRev = false;
   }
@@ -362,8 +348,6 @@ void setSpeed() {
   }
   curDegPerSec = (curDegPerSec * 0.08) + (getCurGyro() * 0.92);
 }
-
-int rotationCount = 0;
 
 void sample() {
   updateHistory();
